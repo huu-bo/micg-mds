@@ -3,7 +3,7 @@ import Console as c;
 from A import B;
 from Console import print as p;
 
-// int d = 69;
+private int d = 69;
 
 private final int BALLS = 2;
 private private private private private private private private int b;

@@ -1,6 +1,7 @@
 from parser import parse, Token
 from typing import List, Tuple, Union, Dict
-from constants import Function, LibraryFunction, Library
+from values import Function, LibraryFunction, Library, Constant
+from values import Variable
 
 # operator precedence
 #  f()
@@ -57,7 +58,7 @@ def parse_text(tokens: List[Token]):
     #   functions
     #   @load
     constants: Dict[str, Union[Function, LibraryFunction, Library]] = {}
-    variables = []
+    variables = {}
     next_func = []  # things like @load on next function
     out = []
     i = 0
@@ -141,18 +142,42 @@ def parse_text(tokens: List[Token]):
 
         elif tokens[i].type == 'TYPE':
             types = []
+            name = ''
             while i < len(tokens):
                 if tokens[i].type == 'NAME':
-                    raise NotImplementedError('giving variable a name lol')
+                    name = tokens[i].data
+                    break
                 assert tokens[i].type == 'TYPE', 'not type before variable name'
 
                 if tokens[i].data not in types:
                     types.append(tokens[i].data)
-                print(types)
+                # print(types)
                 i += 1
+            else:
+                assert False, 'no variable name given'
 
-            print(types)
-            assert False
+            assert tokens[i + 1] == ['TOKEN', ';'] or tokens[i + 1] == ['TOKEN', '='], "expected ';' or '='"
+
+            if tokens[i + 1] == ['TOKEN', '=']:
+                if 'final' in types:
+                    assert tokens[i + 3] == ['TOKEN', ';'], 'expected semicolon after final TYPE NAME = VALUE'
+                    constants[name] = Constant(name, types, tokens[i + 2])
+                    i += 3
+                    continue
+                    # raise NotImplementedError('final variable')
+                else:
+                    assert tokens[i + 3] == ['TOKEN', ';'], 'SMEICOLCOON'
+                    variables[name] = Variable(name, types, value=tokens[i + 2])
+                    i += 3
+                    continue
+            else:
+                if 'final' in types:
+                    assert False, 'final variables should have a value'
+                else:
+                    assert tokens[i + 1] == ['TOKEN', ';'], 'SEMICOLON'
+                    variables[name] = Variable(name, types)
+                    i += 1
+            # assert False
 
         else:
             print(tokens[i:i + 7])
@@ -160,7 +185,9 @@ def parse_text(tokens: List[Token]):
 
         i += 1
 
+    print('-' * 70)
     print(constants)
+    print(variables)
 
 
 def func_define(tokens: List[Token]) -> Tuple[int, List[str]]:
