@@ -14,6 +14,8 @@ func init() {
     c.print("Hello, World!");
     c.print(inc(1));
     p("test");
+
+    a = true;
 }
 
 @private

@@ -4,13 +4,13 @@ from values import Function, LibraryFunction, Library, Constant
 from values import Variable
 
 # operator precedence
-#  f()
+#  NAME.NAME            ['.', first, second]
+#  f()                  ['f', function, args: list]
 #  * /
 #  + -
 #  < > <= >= == !=
 
 # '*', left, right
-# ['FUNC', name], decorators|None, body
 
 
 def expression(tokens: List[Token]):
@@ -23,6 +23,44 @@ def expression(tokens: List[Token]):
     #         return ['FUNC', tokens[i][1]]
     #
     #     i += 1
+
+    print('|', tokens)
+
+    i = 0
+    while i < len(tokens):
+        if tokens[i] == ['TOKEN', ';'] and not i + 1 == len(tokens):
+            return [expression(tokens[:i])] + [expression(tokens[i + 1:])]
+        elif tokens[i] == ['TOKEN', ';']:
+            return expression(tokens[:i])
+        i += 1
+
+    i = 0
+    while i < len(tokens):
+        if tokens[i] == ['TOKEN', '(']:
+            # print(tokens[i:])
+            # print(func_args(tokens[i:]))
+
+            # print(            tokens[i + 1:func_args(tokens[i:]) + 3])
+            # print( expression(tokens[i + 1:func_args(tokens[i:]) + 3]))
+            args = expression(tokens[i + 1:func_args(tokens[i:]) + 3])
+            if args is None:
+                args = []
+            elif type(args) == Token:
+                args = [args]
+            return 'f', expression(tokens[:i]), args
+        i += 1
+
+    i = 0
+    level = 0
+    while i < len(tokens):
+        if tokens[i] == ['TOKEN', '(']:
+            level += 1
+        elif tokens[i] == ['TOKEN', ')']:
+            level -= 1
+        if not level:
+            if tokens[i] == ['TOKEN', '.']:
+                return '.', expression(tokens[:i]), expression(tokens[i + 1:])
+        i += 1
 
     i = 0
     while i < len(tokens):
@@ -40,6 +78,23 @@ def expression(tokens: List[Token]):
             return '-', expression(tokens[:i]), expression(tokens[i + 1:])
 
         i += 1
+
+
+def func_args(tokens: List[Token]):
+    assert tokens[0] == ['TOKEN', '('], '????'
+    level = 0
+    for i in range(len(tokens)):
+        if tokens[i] == ['TOKEN', '(']:
+            level += 1
+        elif tokens[i] == ['TOKEN', ')']:
+            level -= 1
+            if level == 0:
+                return i
+
+    if level:
+        assert False, 'no function closing brace (level > 0)'
+    else:
+        assert False, 'no function closing brace (unexpected EOF)'
 
 
 # import Console as c;
@@ -234,6 +289,8 @@ def func_body(tokens: List[Token]) -> Tuple[int, list]:
 if __name__ == '__main__':
     with open('main.mds', 'r') as file:
         data = file.read()
-
+    #
     print(parse(data))
     parse_text(parse(data))
+
+    # print(expression(parse('a.b(b.a); a.b(b); ')))
