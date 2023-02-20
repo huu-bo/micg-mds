@@ -2,6 +2,12 @@
 import Console as c;
 from A import B;
 from Console import print as p;
+from Console import print as (? + "\n") named println();
+
+// ?  = object = ?1
+// ?2 = the second
+// $i = int
+// $f = float???
 
 private int d = 69;
 
@@ -15,10 +21,39 @@ func init() {
     c.print(inc(1));
     p("test");
 
+    for (int n = 0; n < 69; n++) {
+        c.println("lol " + str(n));
+        println("lmao balls");
+    }
+    for (int j < 10) { // int j = 0; j < 10; j++
+    }
+
+    for (int k = 3; k < 29) {} // int k = 3; k < 29; k++
+
+    for (Item item : ExampleList) {
+
+    }
+    for (Item item : items) {}
+    for (items) {} // Item item : items
+
+    int i = 10;
+    // =< => <== >== === !==
+    i =< 5;  // i = i < 5
+    i => 5;  // i = i > 5
+    i <== 5; // i = i <= 5
+    i >== 5; // i = i >= 5
+    i === 5; // i = i == 5
+    i !== 5; // i = i != 5
+
+
     a = true;
 }
 
 @private
 func int inc(a) {
     return a + 1;
+}
+
+func amongus(? obj) {  // ? = any datatype
+    println(obj.toString())
 }
