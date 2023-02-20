@@ -46,6 +46,18 @@ STATEMENTS = [
 TYPES = [
     'int',
     'void',
+    'str'
+
+    # TODO: more data types
+    #           something like rust range https://doc.rust-lang.org/std/ops/struct.Range.html
+    #           hashmap
+    #           classes
+    #           interfaces
+    #           tuples (type of tuple is like '(int, str)')
+
+    # TODO: nullable data type or variable type?
+    #       nullable int  a;
+    #       nullable<int> a;
 ]
 TYPE_MODS = [
     'unsigned',
