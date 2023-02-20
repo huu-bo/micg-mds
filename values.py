@@ -12,10 +12,20 @@ class Function:
 
 
 class LibraryFunction(Function):
-    def __init__(self, name, ret_type, args, library):
+    def __init__(self, name, library):
         """used in for example 'from A import B', this would be B"""
-        super().__init__(name, ret_type, args, [])
+        # TODO: data type
+        # TODO: arguments
+        super().__init__(name, 'void', [], [])
         self.library = library
+
+
+class AdvancedLibraryFunction(Function):
+    def __init__(self, name, body):
+        # TODO: return type
+        # TODO: arguments
+        super().__init__(name, 'void', [], [])
+        self.body = body
 
 
 class Library:

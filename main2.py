@@ -1,13 +1,16 @@
 from parser import parse, Token
 from typing import List, Tuple, Union, Dict
-from values import Function, LibraryFunction, Library, Constant
+from values import *
 from values import Variable
 
 # operator precedence
 #  NAME.NAME            ['.', first, second]
 #  f()                  ['f', function, args: list]
+#  *= /=
 #  * /
+#  += -=
 #  + -
+#  =< => <== >== === !==
 #  < > <= >= == !=
 
 # '*', left, right
@@ -26,13 +29,13 @@ def expression(tokens: List[Token]):
 
     print('|', tokens)
 
-    i = 0
-    while i < len(tokens):
-        if tokens[i] == ['TOKEN', ';'] and not i + 1 == len(tokens):
-            return [expression(tokens[:i])] + [expression(tokens[i + 1:])]
-        elif tokens[i] == ['TOKEN', ';']:
-            return expression(tokens[:i])
-        i += 1
+    # i = 0
+    # while i < len(tokens):
+    #     if tokens[i] == ['TOKEN', ';'] and not i + 1 == len(tokens):
+    #         return [expression(tokens[:i])] + [expression(tokens[i + 1:])]
+    #     elif tokens[i] == ['TOKEN', ';']:
+    #         return expression(tokens[:i])
+    #     i += 1
 
     i = 0
     while i < len(tokens):
@@ -144,12 +147,37 @@ def parse_text(tokens: List[Token]):
             if tokens[i + 4] == ['TOKEN', ';']:  # from A import B;
                 constants[tokens[i + 3].data] = [['library', tokens[i + 1].data], ['func', tokens[i + 3].data]]
                 i += 4
-            elif tokens[i + 4] == ['STATEMENT', 'as']:  # from A import B as C;
-                assert tokens[i + 5].type == 'NAME'
-                assert tokens[i + 6] == ['TOKEN', ';']
+            elif tokens[i + 4] == ['STATEMENT', 'as']:  # from A import B as C
+                if tokens[i + 5] == ['TOKEN', '(']:  # from A import B as (...) named C;
+                    skip = func_args(tokens[i+5:])
+                    body = tokens[i+6:i+5+skip]  # TODO: AST'ify
+                    l = i+6+skip  # TODO: this is not func args but something like expression()
+                    print('advanced import: ', tokens[i+5:l])
 
-                constants[tokens[i + 5].data] = [['library', tokens[i + 1].data], ['func', tokens[i + 3].data]]
-                i += 6
+                    assert tokens[l] == ['STATEMENT', 'named'], str(tokens[l]) + ', import NAME as () named NAME; ???'
+                    assert tokens[l + 1].type == 'NAME', str(tokens[l + 1]) + ' should be name'
+                    name = tokens[l + 1].data
+                    if tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);
+                        l += 2
+                        l += func_args(tokens[l:])  # TODO
+
+                        assert tokens[l + 1] == ['TOKEN', ';'], "'import NAME as (...) named NAME()' should have ';'"
+
+                        l += 2
+                        i = l
+
+                        constants[name] = AdvancedLibraryFunction(name, body)
+                        # print(constants[name], constants[name].body)  # TODO: assert ';'
+                        # raise NotImplementedError('from A import B as () named C();')  # implemented?
+                    else:  # from A import B as (...) named C;
+                        assert tokens[l + 2] == ['TOKEN', ';'], str(tokens[l + 2]) + ' use ;'
+                        raise NotImplementedError('from A import B as (...) named C;')
+                else:  # from A import B as C;
+                    assert tokens[i + 5].type == 'NAME'
+                    assert tokens[i + 6] == ['TOKEN', ';']
+
+                    constants[tokens[i + 5].data] = [['library', tokens[i + 1].data], ['func', tokens[i + 3].data]]
+                    i += 6
             else:
                 assert False
 
@@ -172,6 +200,7 @@ def parse_text(tokens: List[Token]):
 
                     i += skip + 3
                     skip, body = func_body(tokens[i:])
+                    constants[name].body = body
                     i += skip + 1
                     continue
                 elif tokens[i + 2] == ['TOKEN', '{']:  # func NAME {
@@ -269,21 +298,23 @@ def func_define(tokens: List[Token]) -> Tuple[int, List[str]]:
         return i + 1, args
 
 
-def func_body(tokens: List[Token]) -> Tuple[int, list]:
+def func_body(tokens: List[Token]) -> Tuple[int, List[Token]]:
     assert tokens[0] == ['TOKEN', '{'], 'function body not body but ' + "'" + str(tokens[0]) + "'"
 
     print('function body', tokens)
 
     i = 0
+    body = []
     while i < len(tokens):
         if tokens[i] == ['TOKEN', '}']:
             break
+        body.append(tokens[i])
 
         i += 1
     else:
         assert False, 'function body has no end'
 
-    return i, []
+    return i, body
 
 
 if __name__ == '__main__':

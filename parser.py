@@ -38,6 +38,7 @@ STATEMENTS = [
     'import',
     'as',
     'from',
+    'named',
 
     'load',
     'private'
