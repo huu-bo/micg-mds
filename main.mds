@@ -25,14 +25,13 @@ func init() {
         c.println("lol " + str(n));
         println("lmao balls");
     }
-    for (int j < 10) { // int j = 0; j < 10; j++
-    }
+
+    for (int j < 10) {} // int j = 0; j < 10; j++
+    for (int j < 10; j += 2) {} // int j = 0; j < 10; j += 2;
 
     for (int k = 3; k < 29) {} // int k = 3; k < 29; k++
 
-    for (Item item : ExampleList) {
-
-    }
+    for (Item item : ExampleList) {}
     for (Item item : items) {}
     for (items) {} // Item item : items
 
