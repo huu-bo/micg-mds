@@ -2,7 +2,8 @@ from typing import List
 
 
 class Token:
-    def __init__(self, t: str, data: str):
+    def __init__(self, t: str, data: str, pos: int):
+        self.index = pos
         self.type = t
         self.data = data
 
@@ -32,6 +33,7 @@ TOKENS = [
     '=',
 
     '*', '/', '+', '-'
+    '[', ']'
 ]
 STATEMENTS = [
     'func',
@@ -46,7 +48,8 @@ STATEMENTS = [
 TYPES = [
     'int',
     'void',
-    'str'
+    'char',
+    'range'
 
     # TODO: more data types
     #           something like rust range https://doc.rust-lang.org/std/ops/struct.Range.html
@@ -73,12 +76,13 @@ BRACE_SYNTAX = 2
 
 
 def token_type(string: str) -> Token:
+    global i
     if string in TOKENS:
-        return Token('TOKEN', string)
+        return Token('TOKEN', string, i)
     elif string in STATEMENTS:
-        return Token('STATEMENT', string)
+        return Token('STATEMENT', string, i)
     else:
-        return Token('NAME', string)  # TODO: use name_type to make faster
+        return Token('NAME', string, i)  # TODO: use name_type to make faster
 
 
 def name_type(string: str) -> str:
@@ -118,17 +122,17 @@ def parse(string: str):
                 incomment = True
             elif c in TOKENS:
                 if t:
-                    tokens.append(Token('NAME', t))  # TODO
+                    tokens.append(token_type(t))
                     t = ''
-                tokens.append(Token('TOKEN', c))
+                tokens.append(Token('TOKEN', c, i))
             else:
                 t += c
 
             if t in TOKENS:
-                tokens.append(Token('TOKEN', t))
+                tokens.append(Token('TOKEN', t, i))
                 t = ''
             elif t in STATEMENTS:
-                tokens.append(Token('STATEMENT', t))
+                tokens.append(Token('STATEMENT', t, i))
                 t = ''
         elif incomment:
             if c == '\n':
@@ -137,7 +141,7 @@ def parse(string: str):
             if c != '"':
                 t += c
             else:
-                tokens.append(Token('STR', t))
+                tokens.append(Token('STR', t, i))
                 t = ''
                 instring = False
 
