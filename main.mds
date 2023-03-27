@@ -4,6 +4,15 @@ from A import B;
 from Console import print as p;
 from Console import print as (? + "\n") named println();
 
+// this
+from Console import print as ("Hello, World!");
+// is the same as
+from Console import print as ("Hello, World!") named print();
+// if new name is the same as the old name, you don't have to write it
+// if named () is () then you don't have to write it
+
+// TODO: that is not actually implemented
+
 // ?  = object = ?1
 // ?2 = the second
 // $i = int
@@ -18,13 +27,11 @@ private private private private private private private private int b;
 //           [i      for i : ..10]
 //           {i      for i : ..10}
 //           {i:i**2 for i : ..10}
-for (int k * 2 < 10)
 
-for (int j < 10) -> j * 2 {
-}
-
-int[] a = (..10).toList()
-range b = ..10
+// TODO: ??!??! operator like in c
+//           https://en.wikipedia.org/wiki/Digraphs_and_trigraphs#C
+int error = read_file(file); // pseudocode, if this returns 1,
+error ??!??! p("error");     // because error is true, this prints error.
 
 @private
 @load

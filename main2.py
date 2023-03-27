@@ -154,7 +154,7 @@ def parse_text(tokens: List[Token]):
                     l = i+6+skip  # TODO: this is not func args but something like expression()
                     print('advanced import: ', tokens[i+5:l])
 
-                    assert tokens[l] == ['STATEMENT', 'named'], str(tokens[l]) + ', import NAME as () named NAME; ???'
+                    assert tokens[l] == ['STATEMENT', 'named'], str(tokens[l]) + ', import NAME as (...) named NAME; ???'
                     assert tokens[l + 1].type == 'NAME', str(tokens[l + 1]) + ' should be name'
                     name = tokens[l + 1].data
                     if tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);

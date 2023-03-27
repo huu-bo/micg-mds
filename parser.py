@@ -1,5 +1,7 @@
 from typing import List
 
+i = 0
+
 
 class Token:
     def __init__(self, t: str, data: str, pos: int):
@@ -90,17 +92,21 @@ def name_type(string: str) -> str:
         return 'TYPE'
     elif string.isdecimal():
         return 'INT_LIT'
+    elif string == '??!??!':
+        return 'TOKEN'
     else:
         return 'NAME'
 
 
 def parse(string: str):
+    global i
+    i = 0
+
     tokens: List[Token] = []
 
     t = ''
     incomment = False
     instring = False
-    i = 0
     for c in string:
         if not incomment and not instring:
             if c == '\n':
