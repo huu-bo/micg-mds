@@ -154,7 +154,13 @@ def parse(string: str):
         elif incomment:
             if c == '\n':
                 incomment = False
+                line += 1
+                column = 0
         elif instring:
+            if c == '\n':
+                line += 1
+                column = 0
+
             if c != '"':
                 t += c
             else:

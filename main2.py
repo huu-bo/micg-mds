@@ -109,7 +109,7 @@ def func_args(tokens: List[Token]):
 
 # func int t(a: int) {}
 
-def parse_text(tokens: List[Token]):
+def parse_text(tokens: List[Token], text: str):
     # constants
     #  also things like
     #   libraries
@@ -271,8 +271,23 @@ def parse_text(tokens: List[Token]):
             # assert False
 
         else:
+            print('\33[31m', end='')
             print(tokens[i:i + 7])
-            assert False, f'unknown syntax, line {tokens[i].line}'
+            print(f'unknown syntax, line {tokens[i].line}')  # TODO: line numbers are broken
+
+            j = tokens[i].index
+            while j > 0 and text[j] != '\n':
+                j -= 1
+            spaces_amount = tokens[i].index - j - len(tokens[i].data) - 1
+            j += 1
+            print('\33[0m', end='')
+            while j < len(text) and text[j] != '\n':
+                print(text[j], end='')
+                j += 1
+            print('\33[31m')
+            print(' ' * spaces_amount + '^' * len(tokens[i].data))
+            # TODO: more help on what kind of exception this is and how to fix it
+            raise SyntaxError
 
         i += 1
 
@@ -329,6 +344,6 @@ if __name__ == '__main__':
         data = file.read()
     #
     print(parse(data))
-    parse_text(parse(data))
+    parse_text(parse(data), data)
 
     # print(expression(parse('a.b(b.a); a.b(b); ')))
