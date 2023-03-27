@@ -1,6 +1,8 @@
 from typing import List
 
 i = 0
+line = 0
+column = 0
 
 
 class Token:
@@ -8,6 +10,9 @@ class Token:
         self.index = pos
         self.type = t
         self.data = data
+
+        self.line = line
+        self.column = column
 
     def __repr__(self):
         return "['" + self.type + "', '" + self.data + "']"
@@ -104,12 +109,18 @@ def parse(string: str):
 
     tokens: List[Token] = []
 
+    global line, column
+    line = 0
+    column = 0
+
     t = ''
     incomment = False
     instring = False
     for c in string:
         if not incomment and not instring:
             if c == '\n':
+                line += 1
+                column = 0
                 i += 1
                 continue
 
@@ -154,6 +165,7 @@ def parse(string: str):
         # print(c, t)
 
         i += 1
+        column += 1
 
     for i in range(len(tokens)):
         if tokens[i].type == 'NAME':

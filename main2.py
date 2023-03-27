@@ -121,7 +121,7 @@ def parse_text(tokens: List[Token]):
     out = []
     i = 0
     while i < len(tokens):
-        print(tokens[i:i + 5])
+        print(tokens[i:i + 20])
         if tokens[i] == ['STATEMENT', 'import']:
             # TODO: error messages
             assert tokens[i + 1].type == 'NAME'
@@ -143,32 +143,39 @@ def parse_text(tokens: List[Token]):
         elif tokens[i] == ['STATEMENT', 'from']:
             assert tokens[i + 1].type == 'NAME'
             assert tokens[i + 2] == ['STATEMENT', 'import']
+            assert tokens[i + 3].type == 'NAME'
 
             if tokens[i + 4] == ['TOKEN', ';']:  # from A import B;
                 constants[tokens[i + 3].data] = [['library', tokens[i + 1].data], ['func', tokens[i + 3].data]]
                 i += 4
             elif tokens[i + 4] == ['STATEMENT', 'as']:  # from A import B as C
-                if tokens[i + 5] == ['TOKEN', '(']:  # from A import B as (...) named C;
+                if tokens[i + 5] == ['TOKEN', '(']:  # from A import B as (...)
                     skip = func_args(tokens[i+5:])
                     body = tokens[i+6:i+5+skip]  # TODO: AST'ify
                     l = i+6+skip  # TODO: this is not func args but something like expression()
                     print('advanced import: ', tokens[i+5:l])
 
-                    assert tokens[l] == ['STATEMENT', 'named'], str(tokens[l]) + ', import NAME as (...) named NAME; ???'
-                    assert tokens[l + 1].type == 'NAME', str(tokens[l + 1]) + ' should be name'
-                    name = tokens[l + 1].data
-                    if tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);
-                        l += 2
-                        l += func_args(tokens[l:])  # TODO
-
-                        assert tokens[l + 1] == ['TOKEN', ';'], "'import NAME as (...) named NAME()' should have ';'"
-
-                        l += 2
-                        i = l
-
+                    if tokens[l] == ['TOKEN', ';']:  # from A import B as (...)
+                        name = tokens[i + 3].data
                         constants[name] = AdvancedLibraryFunction(name, body)
-                        # print(constants[name], constants[name].body)  # TODO: assert ';'
-                        # raise NotImplementedError('from A import B as () named C();')  # implemented?
+                        print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+                        i = l
+                    elif tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);
+                        assert tokens[l] == ['STATEMENT', 'named'], str(tokens[l]) + ', import NAME as (...) named NAME; ???'
+                        assert tokens[l + 1].type == 'NAME', str(tokens[l + 1]) + ' should be name'
+                        name = tokens[l + 1].data
+                        if tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);
+                            l += 2
+                            l += func_args(tokens[l:])  # TODO
+
+                            assert tokens[l + 1] == ['TOKEN', ';'], "'import NAME as (...) named NAME()' should have ';'"
+
+                            l += 1
+                            i = l
+
+                            constants[name] = AdvancedLibraryFunction(name, body)
+                            # print(constants[name], constants[name].body)  # TODO: assert ';'
+                            # raise NotImplementedError('from A import B as () named C();')  # implemented?
                     else:  # from A import B as (...) named C;
                         assert tokens[l + 2] == ['TOKEN', ';'], str(tokens[l + 2]) + ' use ;'
                         raise NotImplementedError('from A import B as (...) named C;')
@@ -265,7 +272,7 @@ def parse_text(tokens: List[Token]):
 
         else:
             print(tokens[i:i + 7])
-            assert False, 'unknown syntax'
+            assert False, f'unknown syntax, line {tokens[i].line}'
 
         i += 1
 

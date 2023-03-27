@@ -28,11 +28,6 @@ private private private private private private private private int b;
 //           {i      for i : ..10}
 //           {i:i**2 for i : ..10}
 
-// TODO: ??!??! operator like in c
-//           https://en.wikipedia.org/wiki/Digraphs_and_trigraphs#C
-int error = read_file(file); // pseudocode, if this returns 1,
-error ??!??! p("error");     // because error is true, this prints error.
-
 @private
 @load
 func init() {
@@ -65,6 +60,11 @@ func init() {
 
 
     a = true;
+
+    // TODO: ??!??! operator like in c
+    //           https://en.wikipedia.org/wiki/Digraphs_and_trigraphs#C
+    int error = read_file(file); // pseudocode, if this returns 1,
+    error ??!??! p("error");     // because error is true, this prints error.
 }
 
 @private
