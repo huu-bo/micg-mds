@@ -11,6 +11,8 @@ from Console import print as ("Hello, World!") named print();
 // if new name is the same as the old name, you don't have to write it
 // if named () is () then you don't have to write it
 
+from Console import print as ("Hello, World!") named hello_world();
+
 // TODO: that is not actually implemented
 
 // ?  = object = ?1

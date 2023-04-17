@@ -129,12 +129,12 @@ def parse_text(tokens: List[Token], text: str):
                 assert tokens[i + 3].type == 'NAME'
                 assert tokens[i + 4] == ['TOKEN', ';']
 
-                constants[tokens[i + 3].data] = ['library', tokens[i + 1].data]
+                constants[tokens[i + 3].data] = Library(tokens[i + 1].data)
 
                 i += 5
                 continue
             elif tokens[i + 2] == ['TOKEN', ';']:  # import A;
-                constants[tokens[i + 1].data] = ['library', tokens[i + 1].data]
+                constants[tokens[i + 1].data] = Library(tokens[i + 1].data)
                 i += 3
                 continue
             else:
@@ -146,7 +146,7 @@ def parse_text(tokens: List[Token], text: str):
             assert tokens[i + 3].type == 'NAME'
 
             if tokens[i + 4] == ['TOKEN', ';']:  # from A import B;
-                constants[tokens[i + 3].data] = [['library', tokens[i + 1].data], ['func', tokens[i + 3].data]]
+                constants[tokens[i + 3].data] = LibraryFunction(tokens[i + 3].data, tokens[i + 1])
                 i += 4
             elif tokens[i + 4] == ['STATEMENT', 'as']:  # from A import B as C
                 if tokens[i + 5] == ['TOKEN', '(']:  # from A import B as (...)
@@ -158,7 +158,6 @@ def parse_text(tokens: List[Token], text: str):
                     if tokens[l] == ['TOKEN', ';']:  # from A import B as (...)
                         name = tokens[i + 3].data
                         constants[name] = AdvancedLibraryFunction(name, body)
-                        print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
                         i = l
                     elif tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);
                         assert tokens[l] == ['STATEMENT', 'named'], str(tokens[l]) + ', import NAME as (...) named NAME; ???'
@@ -273,7 +272,7 @@ def parse_text(tokens: List[Token], text: str):
         else:
             print('\33[31m', end='')
             print(tokens[i:i + 7])
-            print(f'unknown syntax, line {tokens[i].line}')  # TODO: line numbers are broken
+            print(f'unknown syntax, line {tokens[i].line}')
 
             j = tokens[i].index
             while j > 0 and text[j] != '\n':
@@ -287,7 +286,7 @@ def parse_text(tokens: List[Token], text: str):
             print('\33[31m')
             print(' ' * spaces_amount + '^' * len(tokens[i].data))
             # TODO: more help on what kind of exception this is and how to fix it
-            raise SyntaxError
+            exit(1)
 
         i += 1
 
@@ -327,9 +326,14 @@ def func_body(tokens: List[Token]) -> Tuple[int, List[Token]]:
 
     i = 0
     body = []
+    level = 0
     while i < len(tokens):
+        if tokens[i] == ['TOKEN', '{']:
+            level += 1
         if tokens[i] == ['TOKEN', '}']:
-            break
+            level -= 1
+            if level == 0:
+                break
         body.append(tokens[i])
 
         i += 1

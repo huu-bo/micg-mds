@@ -1,7 +1,7 @@
 from typing import List
 
 i = 0
-line = 0
+line = 1
 column = 0
 
 
@@ -110,7 +110,7 @@ def parse(string: str):
     tokens: List[Token] = []
 
     global line, column
-    line = 0
+    line = 1
     column = 0
 
     t = ''
