@@ -100,6 +100,63 @@ def func_args(tokens: List[Token]):
         assert False, 'no function closing brace (unexpected EOF)'
 
 
+def error(tokens: list, i: int, text: str, msg: str, note=None):  # TODO: some way to tell programmer about potential fix
+    print('\33[31m', end='')
+    print(tokens[i:i + 7])
+    print(f'unknown syntax, line {tokens[i].line}')  # TODO: different kinds of error
+
+    j = tokens[i].index
+    while j > 0 and text[j] != '\n':
+        j -= 1
+    spaces_amount = tokens[i].index - j
+    j += 1
+    print('\33[0m', end='')
+    while j < len(text) and text[j] != '\n':
+        print(text[j], end='')
+        j += 1
+    print('\33[31m')
+    print(' ' * spaces_amount + '^' * len(tokens[i].data))
+
+    print(msg)
+
+    if note is not None:
+        if len(note) != 3:
+            raise ValueError
+        print('\33[96mnote:')
+
+        if note[2]:
+            line = ''
+
+            j = tokens[i].index
+            while j > 0 and text[j] != '\n':
+                j -= 1
+            j += 1
+            line_start = j
+            print('\33[0m', end='')
+            while j < len(text) and text[j] != '\n':
+                line += text[j]
+                j += 1
+            spaces_amount = tokens[note[0]].column + 1
+            print(line)
+            print('\33[96m' + ' ' * spaces_amount + '^' * len(tokens[i].data))
+            print(' ' * spaces_amount + note[1])
+        else:
+            j = tokens[i].index
+            while j > 0 and text[j] != '\n':
+                j -= 1
+            j += 1
+            line_start = j
+            print('\33[0m', end='')
+            while j < len(text) and text[j] != '\n':
+                print(text[j], end='')
+                j += 1
+            spaces_amount = j - line_start  # TODO: always places at the end of the line
+            print('\33[96m' + note[1])
+            print(' ' * spaces_amount + '^' * len(note[1]))
+
+    exit(1)
+
+
 # import Console as c;
 # import Test;
 # from Lib import func;
@@ -141,9 +198,12 @@ def parse_text(tokens: List[Token], text: str):
                 assert False, 'expected semicolon'
 
         elif tokens[i] == ['STATEMENT', 'from']:
-            assert tokens[i + 1].type == 'NAME'
-            assert tokens[i + 2] == ['STATEMENT', 'import']
-            assert tokens[i + 3].type == 'NAME'
+            if tokens[i + 1].type != 'NAME':
+                error(tokens, i + 1, text, 'expected name')
+            if tokens[i + 2] != ['STATEMENT', 'import']:
+                error(tokens, i + 2, text, "expected 'import'", note=(i + 2, 'import', True))
+            if tokens[i + 3].type != 'NAME':
+                error(tokens, i + 3, text, 'expected name')
 
             if tokens[i + 4] == ['TOKEN', ';']:  # from A import B;
                 constants[tokens[i + 3].data] = LibraryFunction(tokens[i + 3].data, tokens[i + 1])
@@ -160,14 +220,18 @@ def parse_text(tokens: List[Token], text: str):
                         constants[name] = AdvancedLibraryFunction(name, body)
                         i = l
                     elif tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);
-                        assert tokens[l] == ['STATEMENT', 'named'], str(tokens[l]) + ', import NAME as (...) named NAME; ???'
-                        assert tokens[l + 1].type == 'NAME', str(tokens[l + 1]) + ' should be name'
+                        if tokens[l] != ['STATEMENT', 'named']:
+                            error(tokens, l, text, "expected 'named'", note=(l, 'named', True))
+                        if tokens[l + 1].type != 'NAME':
+                            error(tokens, l + 1, text, 'expected name')  # TODO: information about what is a name and what not
+
                         name = tokens[l + 1].data
                         if tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);
                             l += 2
                             l += func_args(tokens[l:])  # TODO
 
-                            assert tokens[l + 1] == ['TOKEN', ';'], "'import NAME as (...) named NAME()' should have ';'"
+                            if tokens[l + 1] != ['TOKEN', ';']:
+                                error(tokens, l, text, "expected semicolon", note=(l+1, ';', False))
 
                             l += 1
                             i = l
@@ -179,10 +243,13 @@ def parse_text(tokens: List[Token], text: str):
                         assert tokens[l + 2] == ['TOKEN', ';'], str(tokens[l + 2]) + ' use ;'
                         raise NotImplementedError('from A import B as (...) named C;')
                 else:  # from A import B as C;
-                    assert tokens[i + 5].type == 'NAME'
-                    assert tokens[i + 6] == ['TOKEN', ';']
+                    if tokens[i + 5].type != 'NAME':
+                        error(tokens, i + 5, text, 'expected name')
+                    if tokens[i + 6] != ['TOKEN', ';']:
+                        error(tokens, i + 5, text, 'expected semicolon', note=(0, ';', False))
 
-                    constants[tokens[i + 5].data] = [['library', tokens[i + 1].data], ['func', tokens[i + 3].data]]
+                    constants[tokens[i + 5].data] = LibraryFunction(tokens[i + 3].data, tokens[i + 1].data)
+                    # constants[tokens[i + 5].data] = [['library', tokens[i + 1].data], ['func', tokens[i + 3].data]]
                     i += 6
             else:
                 assert False

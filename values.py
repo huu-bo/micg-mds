@@ -19,6 +19,9 @@ class LibraryFunction(Function):
         super().__init__(name, 'void', [], [])
         self.library = library
 
+    def __repr__(self):
+        return "'function '" + self.name + "', " + str(self.ret_type) + ", from '" + str(self.library) + "''"
+
 
 class AdvancedLibraryFunction(Function):
     def __init__(self, name, body):

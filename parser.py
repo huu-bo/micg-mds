@@ -7,12 +7,12 @@ column = 0
 
 class Token:
     def __init__(self, t: str, data: str, pos: int):
-        self.index = pos
+        self.index = pos - len(data)
         self.type = t
         self.data = data
 
         self.line = line
-        self.column = column
+        self.column = column - len(data)
 
     def __repr__(self):
         return "['" + self.type + "', '" + self.data + "']"
