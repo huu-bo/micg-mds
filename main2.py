@@ -4,8 +4,9 @@ from values import *
 from values import Variable
 
 # operator precedence
+#  (TYPE) name
 #  NAME.NAME            ['.', first, second]
-#  f()                  ['f', function, args: list]
+#  f()                  ['f', function: str, args: list]
 #  *= /=
 #  * /
 #  += -=
@@ -27,7 +28,26 @@ def expression(tokens: List[Token]):
     #
     #     i += 1
 
-    print('|', tokens)
+    print('    |', tokens)
+
+    t = []
+    r = []
+    for i, token in enumerate(tokens):
+        if token == ['TOKEN', ',']:
+            if t:
+                r.append(expression(t))
+                t = []
+            else:
+                pass  # TODO: this allows for e.g. print(, , , , , , , , , , "a\n");
+        elif token == ['TOKEN', '(']:
+            break
+        else:
+            t.append(token)
+    if r:
+        r.append(expression(t))
+
+    if len(r) > 1:
+        return r
 
     # i = 0
     # while i < len(tokens):
@@ -65,21 +85,22 @@ def expression(tokens: List[Token]):
                 return '.', expression(tokens[:i]), expression(tokens[i + 1:])
         i += 1
 
+    # TODO: () with math
+    i = 0
+    while i < len(tokens):
+        if tokens[i] == ['TOKEN', '+']:
+            return '+', expression(tokens[:i]), expression(tokens[i + 1:])
+        elif tokens[i] == ['TOKEN', '-']:
+            return '-', expression(tokens[:i]), expression(tokens[i + 1:])
+
+        i += 1
+
     i = 0
     while i < len(tokens):
         if tokens[i] == ['TOKEN', '*']:
             return '*', expression(tokens[:i]), expression(tokens[i + 1:])
         elif tokens[i] == ['TOKEN', '/']:
             return '/', expression(tokens[:i]), expression(tokens[i + 1:])
-        i += 1
-
-    i = 0
-    while i < len(tokens):
-        if tokens[i] == ['TOKEN', '+']:
-            return '+', expression(tokens[:i]), expression(tokens[i + 1:])
-        elif tokens[i] == ['TOKEN', '+']:
-            return '-', expression(tokens[:i]), expression(tokens[i + 1:])
-
         i += 1
 
 
@@ -426,7 +447,14 @@ if __name__ == '__main__':
     with open('main.mds', 'r') as file:
         data = file.read()
     #
-    print(parse(data))
-    parse_text(parse(data), data)
+    # print(parse(data))
+    # parse_text(parse(data), data)
 
-    # print(expression(parse('a.b(b.a); a.b(b); ')))
+    tokens = parse('1*(2+3); ')
+    t = []
+    for token in tokens:
+        if token == ['TOKEN', ';']:
+            print(expression(t))
+            t = []
+        else:
+            t.append(token)
