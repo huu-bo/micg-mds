@@ -100,15 +100,16 @@ def func_args(tokens: List[Token]):
         assert False, 'no function closing brace (unexpected EOF)'
 
 
-def error(tokens: list, i: int, text: str, msg: str, note=None):  # TODO: some way to tell programmer about potential fix
+def error(tokens: list, i: int, text: str, msg: str, note=None):  # TODO: an explanation in the error message
     print('\33[31m', end='')
     print(tokens[i:i + 7])
-    print(f'unknown syntax, line {tokens[i].line}')  # TODO: different kinds of error
+    # print(f'unknown syntax, line {tokens[i].line}')  # TODO: different kinds of error
+    print(f'line {tokens[i].line}')
 
     j = tokens[i].index
     while j > 0 and text[j] != '\n':
         j -= 1
-    spaces_amount = tokens[i].index - j
+    spaces_amount = tokens[i].column
     j += 1
     print('\33[0m', end='')
     while j < len(text) and text[j] != '\n':
@@ -121,7 +122,15 @@ def error(tokens: list, i: int, text: str, msg: str, note=None):  # TODO: some w
 
     if note is not None:
         if len(note) != 3:
-            raise ValueError
+            raise ValueError('note should be (index: int, text: str, replace: bool)')
+
+        if type(note[0]) != int:
+            raise ValueError('note should be (index: int, text: str, replace: bool)')
+        if type(note[1]) != str:
+            raise ValueError('note should be (index: int, text: str, replace: bool)')
+        if type(note[2]) != bool:
+            raise ValueError('note should be (index: int, text: str, replace: bool)')
+
         print('\33[96mnote:')
 
         if note[2]:
@@ -262,7 +271,7 @@ def parse_text(tokens: List[Token], text: str):
             continue
 
         # TODO
-        elif tokens[i] == ['STATEMENT', 'func']:
+        elif tokens[i] == ['STATEMENT', 'func']:  # func
             if tokens[i + 1].type == 'NAME':
                 if tokens[i + 2] == ['TOKEN', '(']:  # func NAME () {
                     skip, args = func_define(tokens[i + 3:])
@@ -281,8 +290,9 @@ def parse_text(tokens: List[Token], text: str):
                     raise NotImplementedError('func NAME {')
                 else:
                     assert False, 'incorrect function definition'
-            elif tokens[i + 1].type == 'TYPE':
-                assert tokens[i + 2].type == 'NAME', 'please give valid name as function definition'
+            elif tokens[i + 1].type == 'TYPE':  # func TYPE NAME () {
+                if tokens[i + 2].type != 'NAME':
+                    error(tokens, i + 2, text, 'invalid name')
                 skip, args = func_define(tokens[i + 4:])
                 name = tokens[i + 2].data
                 ret_type = tokens[i + 1].data
@@ -304,14 +314,16 @@ def parse_text(tokens: List[Token], text: str):
                 if tokens[i].type == 'NAME':
                     name = tokens[i].data
                     break
-                assert tokens[i].type == 'TYPE', 'not type before variable name'
+
+                if tokens[i].type != 'TYPE':
+                    error(tokens, i, text, 'there should be a type before a variable name')
 
                 if tokens[i].data not in types:
                     types.append(tokens[i].data)
                 # print(types)
                 i += 1
             else:
-                assert False, 'no variable name given'
+                error(tokens, i-1, text, 'unexpected eof\nexpected variable name')
 
             assert tokens[i + 1] == ['TOKEN', ';'] or tokens[i + 1] == ['TOKEN', '='], "expected ';' or '='"
 
