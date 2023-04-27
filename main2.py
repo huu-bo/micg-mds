@@ -104,6 +104,22 @@ def expression(tokens: List[Token]):
         i += 1
 
 
+def func_expression(tokens: List[Token]):
+    r = []
+    t = []
+    for token in tokens:
+        if token == ['TOKEN', ';']:
+            r.append(expression(t))
+            t = []
+        else:
+            t.append(token)
+
+    if t:
+        pass  # TODO: this means that the last line did not have a semicolon
+
+    return r
+
+
 def func_args(tokens: List[Token]):
     assert tokens[0] == ['TOKEN', '('], '????'
     level = 0
@@ -121,7 +137,7 @@ def func_args(tokens: List[Token]):
         assert False, 'no function closing brace (unexpected EOF)'
 
 
-def error(tokens: list, i: int, text: str, msg: str, note=None):  # TODO: an explanation in the error message
+def error(tokens: list, i: int, text: str, msg: str, note: Union[Tuple[int, str, bool]] = None):  # TODO: an explanation in the error message
     print('\33[31m', end='')
     print(tokens[i:i + 7])
     # print(f'unknown syntax, line {tokens[i].line}')  # TODO: different kinds of error
@@ -166,7 +182,7 @@ def error(tokens: list, i: int, text: str, msg: str, note=None):  # TODO: an exp
             while j < len(text) and text[j] != '\n':
                 line += text[j]
                 j += 1
-            spaces_amount = tokens[note[0]].column + 1
+            spaces_amount = tokens[note[0]].column
             print(line)
             print('\33[96m' + ' ' * spaces_amount + '^' * len(tokens[i].data))
             print(' ' * spaces_amount + note[1])
@@ -270,8 +286,18 @@ def parse_text(tokens: List[Token], text: str):
                             # print(constants[name], constants[name].body)  # TODO: assert ';'
                             # raise NotImplementedError('from A import B as () named C();')  # implemented?
                     else:  # from A import B as (...) named C;
-                        assert tokens[l + 2] == ['TOKEN', ';'], str(tokens[l + 2]) + ' use ;'
-                        raise NotImplementedError('from A import B as (...) named C;')
+                        if tokens[l] != ['STATEMENT', 'named']:
+                            error(tokens, l, text, '', (l, 'named', True))
+                        if tokens[l + 1].type != 'NAME':
+                            error(tokens, l + 1, text, 'expected name of func')
+                        if tokens[l + 2] != ['TOKEN', ';']:
+                            error(tokens, l + 1, text, 'expected semicolon', (0, ';', False))  # TODO: alignment broken
+
+                        name = tokens[l + 1].data
+                        constants[name] = AdvancedLibraryFunction(name, body)
+                        i = l + 2
+
+                        # raise NotImplementedError('from A import B as (...) named C;')
                 else:  # from A import B as C;
                     if tokens[i + 5].type != 'NAME':
                         error(tokens, i + 5, text, 'expected name')
@@ -303,7 +329,7 @@ def parse_text(tokens: List[Token], text: str):
 
                     i += skip + 3
                     skip, body = func_body(tokens[i:])
-                    constants[name].body = body
+                    constants[name].body = expression(body)
                     i += skip + 1
                     continue
                 elif tokens[i + 2] == ['TOKEN', '{']:  # func NAME {
@@ -446,15 +472,15 @@ def func_body(tokens: List[Token]) -> Tuple[int, List[Token]]:
 if __name__ == '__main__':
     with open('main.mds', 'r') as file:
         data = file.read()
-    #
-    # print(parse(data))
-    # parse_text(parse(data), data)
 
-    tokens = parse('1*(2+3); ')
-    t = []
-    for token in tokens:
-        if token == ['TOKEN', ';']:
-            print(expression(t))
-            t = []
-        else:
-            t.append(token)
+    print(parse(data))
+    parse_text(parse(data), data)
+
+    # tokens = parse('1*(2+3); ')
+    # t = []
+    # for token in tokens:
+    #     if token == ['TOKEN', ';']:
+    #         print(expression(t))
+    #         t = []
+    #     else:
+    #         t.append(token)

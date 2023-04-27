@@ -14,7 +14,9 @@ from Console import print as ("Hello, World!") named print();
 from Console import print as ("Hello, World!") named hello_world;
 
 // inject into namespace
-from Console import print as (?1 + "!\n") named console.printX(?);
+//from Console import print as (?1 + "!\n") named console.printX(?);
+// TODO: implement namespace injection
+// TODO: implement namespace injection for import statements
 
 // ?1  = object
 // ?2 = the second
@@ -68,7 +70,7 @@ func init() {
 
     a = true;
 
-    error ? p("error");     // because error is true, this prints error.
+    error ? p("error");     // because error is true, this prints error. (Ternary expression)
 }
 
 @private
