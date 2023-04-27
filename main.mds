@@ -2,7 +2,7 @@
 import Console as c;
 from A import B;
 from Console import print as p;
-from Console import print as (? + "\n") named println();
+from Console import print as (?1 + "\n") named println();
 
 // this
 from Console import print as ("Hello, World!");
@@ -11,14 +11,15 @@ from Console import print as ("Hello, World!") named print();
 // if new name is the same as the old name, you don't have to write it
 // if named () is () then you don't have to write it
 
-from Console import print as ("Hello, World!") named hello_world();
+from Console import print as ("Hello, World!") named hello_world;
 
-// TODO: that is not actually implemented
+// inject into namespace
+from Console import print as (?1 + "!\n") named console.printX(?);
 
-// ?  = object = ?1
+// ?1  = object
 // ?2 = the second
 // $i = int
-// $f = float???
+// $f = float
 
 private int d = 69;
 
@@ -30,6 +31,10 @@ private private private private private private private private int b;
 //           {i      for i : ..10}
 //           {i:i**2 for i : ..10}
 
+// TODO: should it be [i for i : ..10] or [i for int i : ..10]
+//           the first one is alot more readable but then you can't choose the type
+//           maybe default to int but allow other types?
+
 @private
 @load
 func init() {
@@ -38,7 +43,7 @@ func init() {
     p("test");
 
     for (int n = 0; n < 69; n++) {
-        c.println("lol " + str(n));
+        c.println("lol " + str(n));  // TODO: should it be str(n) or n.toString()
         println("lmao balls");
     }
 
@@ -63,10 +68,7 @@ func init() {
 
     a = true;
 
-    // TODO: ??!??! operator like in c
-    //           https://en.wikipedia.org/wiki/Digraphs_and_trigraphs#C
-    int error = read_file(file); // pseudocode, if this returns 1,
-    error ??!??! p("error");     // because error is true, this prints error.
+    error ? p("error");     // because error is true, this prints error.
 }
 
 @private
@@ -74,6 +76,7 @@ func int inc(a) {
     return a + 1;
 }
 
+// TODO: should it default to @private, @public or error?
 func amongus(? obj) {  // ? = any datatype
     println(obj.toString())
 }
