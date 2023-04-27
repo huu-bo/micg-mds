@@ -20,6 +20,13 @@ from values import Variable
 def expression(tokens: List[Token]):
     if len(tokens) == 1:
         return tokens[0]
+    if not tokens:
+        return
+
+    if tokens[0] == ['TOKEN', '{']:
+        tokens = tokens[1:]  # TODO: properly implement namespaces
+    if tokens[-1] == ['TOKEN', '}']:
+        tokens = tokens[:-1]
 
     # i = 0
     # while i < len(tokens) - 3:
@@ -329,7 +336,7 @@ def parse_text(tokens: List[Token], text: str):
 
                     i += skip + 3
                     skip, body = func_body(tokens[i:])
-                    constants[name].body = expression(body)
+                    constants[name].body = func_expression(body)
                     i += skip + 1
                     continue
                 elif tokens[i + 2] == ['TOKEN', '{']:  # func NAME {
