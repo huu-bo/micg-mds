@@ -58,6 +58,13 @@ func init() {
     for (Item item : items) {}
     for (items) {} // Item item : items
 
+    // in for loop with ':' not specifying variable type is the same as 'auto' in c++
+    // TODO: this should happen in any variable definition if it's applicable
+
+    char[] a = "moerde";
+    c = a[1]; // same as  char c = a[1];
+              //   because [] on char[] returns char
+
     int i = 10;
     // =< => <== >== === !==
     i =< 5;  // i = i < 5
