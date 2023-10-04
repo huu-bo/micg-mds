@@ -39,7 +39,7 @@ TOKENS = [
     '.', ',',
     '=',
 
-    '*', '/', '+', '-'
+    '*', '/', '+', '-',
     '[', ']'
 ]
 STATEMENTS = [
@@ -50,7 +50,9 @@ STATEMENTS = [
     'named',
 
     'load',
-    'private'
+    'private',
+
+    'for'
 ]
 TYPES = [
     'int',

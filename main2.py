@@ -1,7 +1,10 @@
 from parser import parse, Token
 from typing import List, Tuple, Union, Dict
 from values import *
-from values import Variable
+
+COMPS = [
+    '==', '!=', '<', '>', '<=', '>='
+]
 
 # operator precedence
 #  (TYPE) name
@@ -36,6 +39,14 @@ def expression(tokens: List[Token]):
     #     i += 1
 
     print('    |', tokens)
+    #
+    # i = 0
+    # while i < len(tokens):
+    #     if tokens[i] == ['TOKEN', ';'] and not i + 1 == len(tokens):
+    #         return [expression(tokens[:i])] + [expression(tokens[i + 1:])]
+    #     elif tokens[i] == ['TOKEN', ';']:
+    #         return expression(tokens[:i])
+    #     i += 1
 
     t = []
     r = []
@@ -56,29 +67,51 @@ def expression(tokens: List[Token]):
     if len(r) > 1:
         return r
 
-    # i = 0
-    # while i < len(tokens):
-    #     if tokens[i] == ['TOKEN', ';'] and not i + 1 == len(tokens):
-    #         return [expression(tokens[:i])] + [expression(tokens[i + 1:])]
-    #     elif tokens[i] == ['TOKEN', ';']:
-    #         return expression(tokens[:i])
-    #     i += 1
-
+    level = 0
     i = 0
+    lhs = []
+    rhs = []
+    state = 'lhs'
     while i < len(tokens):
         if tokens[i] == ['TOKEN', '(']:
-            # print(tokens[i:])
-            # print(func_args(tokens[i:]))
+            if level == 0 and state == 'lhs':
+                state = 'rhs'
 
-            # print(            tokens[i + 1:func_args(tokens[i:]) + 3])
-            # print( expression(tokens[i + 1:func_args(tokens[i:]) + 3]))
-            args = expression(tokens[i + 1:func_args(tokens[i:]) + 3])
-            if args is None:
-                args = []
-            elif type(args) == Token:
-                args = [args]
-            return 'f', expression(tokens[:i]), args
+            level += 1
+        elif tokens[i] == ['TOKEN', ')']:
+            level -= 1
+            if level < 0:
+                error(tokens, i, data, "too many ')'")
+        elif state == 'lhs':
+            lhs.append(tokens[i])
+        elif state == 'rhs':
+            rhs.append(tokens[i])
+
         i += 1
+
+    if lhs and rhs:
+        print('FOOOR', lhs, rhs)
+        if lhs[0] == ['STATEMENT', 'for']:
+            # error(tokens, 0, data, 'not implemented')
+            return 'for', for_expression(rhs)  # TODO: parse body
+        elif state == 'rhs':
+            return 'f', lhs, rhs
+
+    # i = 0
+    # while i < len(tokens):
+    #     if tokens[i] == ['TOKEN', '(']:
+    #         print(tokens[i:])
+    #         # print(func_args(tokens[i:]))
+    #
+    #         print(            tokens[i + 1:func_args(tokens[i:]) + 3])
+    #         print( expression(tokens[i + 1:func_args(tokens[i:]) + 3]))
+    #         args = expression(tokens[i + 1:func_args(tokens[i:]) + 3])
+    #         if args is None:
+    #             args = []
+    #         elif type(args) == Token:
+    #             args = [args]
+    #         return 'f', expression(tokens[:i]), args
+    #     i += 1
 
     i = 0
     level = 0
@@ -110,14 +143,27 @@ def expression(tokens: List[Token]):
             return '/', expression(tokens[:i]), expression(tokens[i + 1:])
         i += 1
 
+    error(tokens, 0, data, 'unknown grammar')
+
 
 def func_expression(tokens: List[Token]):
     r = []
     t = []
+    level = 0
     for token in tokens:
-        if token == ['TOKEN', ';']:
-            r.append(expression(t))
-            t = []
+        if token == ['TOKEN', '('] or token == ['TOKEN', '{']:
+            # if level == 0:
+            #     r.append(expression(t))
+            #     t = []
+            level += 1
+        elif token == ['TOKEN', ')'] or token == ['TOKEN', '}']:
+            level -= 1
+        if level == 1:  # for 'for' loops
+            if token == ['TOKEN', ';']:
+                r.append(expression(t))
+                t = []
+            else:
+                t.append(token)
         else:
             t.append(token)
 
@@ -125,6 +171,10 @@ def func_expression(tokens: List[Token]):
         pass  # TODO: this means that the last line did not have a semicolon
 
     return r
+
+
+def for_expression(tokens: List[Token]):
+    print('  F |', tokens)
 
 
 def func_args(tokens: List[Token]):
@@ -337,6 +387,7 @@ def parse_text(tokens: List[Token], text: str):
                     i += skip + 3
                     skip, body = func_body(tokens[i:])
                     constants[name].body = func_expression(body)
+                    print(constants[name].body)
                     i += skip + 1
                     continue
                 elif tokens[i + 2] == ['TOKEN', '{']:  # func NAME {
@@ -480,8 +531,10 @@ if __name__ == '__main__':
     with open('main.mds', 'r') as file:
         data = file.read()
 
-    print(parse(data))
-    parse_text(parse(data), data)
+    # print(parse(data))
+    # parse_text(parse(data), data)
+
+    print(expression(parse('print(a); ')))
 
     # tokens = parse('1*(2+3); ')
     # t = []

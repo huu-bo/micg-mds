@@ -1,91 +1,9 @@
-// je moerde
-import Console as c;
-from A import B;
-from Console import print as p;
-from Console import print as (?1 + "\n") named println();
+from console import print;
 
-// this
-from Console import print as ("Hello, World!");
-// is the same as
-from Console import print as ("Hello, World!") named print();
-// if new name is the same as the old name, you don't have to write it
-// if named () is () then you don't have to write it
+func int main() {
+    print("test message");
 
-from Console import print as ("Hello, World!") named hello_world;
-
-// inject into namespace
-//from Console import print as (?1 + "!\n") named console.printX(?);
-// TODO: implement namespace injection
-// TODO: implement namespace injection for import statements
-
-// ?1  = object
-// ?2 = the second
-// $i = int
-// $f = float
-
-private int d = 69;
-
-private final int BALLS = 2;
-private private private private private private private private int b;
-
-// TODO: something like python [] {}
-//           [i      for i : ..10]
-//           {i      for i : ..10}
-//           {i:i**2 for i : ..10}
-
-// TODO: should it be [i for i : ..10] or [i for int i : ..10]
-//           the first one is alot more readable but then you can't choose the type
-//           maybe default to int but allow other types?
-
-@private
-@load
-func init() {
-    c.print("Hello, World!");
-    c.print(inc(1));
-    p("test");
-
-    for (int n = 0; n < 69; n++) {
-        c.println("lol " + str(n));  // TODO: should it be str(n) or n.toString()
-        println("lmao balls");
-    }
-
-    for (int j < 10) {} // int j = 0; j < 10; j++
-    for (int j < 10; j += 2) {} // int j = 0; j < 10; j += 2;
-
-    for (int k = 3; k < 29) {} // int k = 3; k < 29; k++
-
-    for (Item item : ExampleList) {}
-    for (Item item : items) {}
-    for (items) {} // Item item : items
-
-    // in for loop with ':' not specifying variable type is the same as 'auto' in c++
-    // TODO: this should happen in any variable definition if it's applicable
-
-    char[] a = "moerde";
-    c = a[1]; // same as  char c = a[1];
-              //   because [] on char[] returns char
-
-    int i = 10;
-    // =< => <== >== === !==
-    i =< 5;  // i = i < 5
-    i => 5;  // i = i > 5
-    i <== 5; // i = i <= 5
-    i >== 5; // i = i >= 5
-    i === 5; // i = i == 5
-    i !== 5; // i = i != 5
-
-
-    a = true;
-
-    error ? p("error");     // because error is true, this prints error. (Ternary expression)
-}
-
-@private
-func int inc(a) {
-    return a + 1;
-}
-
-// TODO: should it default to @private, @public or error?
-func amongus(? obj) {  // ? = any datatype
-    println(obj.toString())
+    int a = 3;
+    // a += a + 1 * 2;
+    print(a);
 }
