@@ -3,18 +3,36 @@ from parser import Token, parse
 
 ANSI_ERROR = '\33[31m'
 ANSI_WHITE = '\33[0m'
-ANSI_NOTE = '\33[96'
+ANSI_NOTE = '\33[96m'
 ANSI_LINE = '\33[36m'
 
 
 def error(tokens: List[Token], i: int, text: str, msg: str, _exit=True):
     print(f'{ANSI_ERROR}{tokens[i:i+7]}{ANSI_WHITE}')
 
-    start_line_index, end_line_index = _get_line_i(tokens[i], text)
-    print(text[start_line_index:end_line_index])
+    _print_line_with_arrow(tokens[i], text)
+
+    print(f'{ANSI_ERROR}ERROR: {msg}{ANSI_WHITE}')
 
     if _exit:
         exit(1)
+
+
+def error_w_note(tokens: List[Token], i: int, text: str, msg: str, note_replace: bool, note_replace_str: str, note_msg: str, _exit=True):
+    print(f'{ANSI_ERROR}{tokens[i:i+7]}{ANSI_WHITE}')
+
+    _print_line_with_arrow(tokens[i], text)
+    print(f'{ANSI_ERROR}ERROR: {msg}{ANSI_WHITE}')
+
+    note(tokens, i, text, note_replace, note_replace_str, note_msg)
+
+    if _exit:
+        exit(1)
+
+
+def note(tokens: List[Token], i: int, text: str, replace: bool, replace_str: str, msg: str):
+    _print_line_with_arrow_and_note(tokens[i], text, replace, replace_str)
+    print(f'{ANSI_NOTE}NOTE: {msg}{ANSI_WHITE}')
 
 
 def _get_line_i(token: Token, text: str) -> Tuple[int, int]:
@@ -31,22 +49,43 @@ def _get_line_i(token: Token, text: str) -> Tuple[int, int]:
     return start, end
 
 
-def _print_line_with_arrow_from_string(token: Token, text: str, color: str = ANSI_ERROR):
+def _print_line_with_arrow(token: Token, text: str, color: str = ANSI_ERROR):
     print(ANSI_LINE, end='')
     print(str(token.line).rjust(4) + ' | ', end='')
     print(ANSI_WHITE, end='')
 
     start_line_i, end_line_i = _get_line_i(token, text)
-    column = start_line_i + token.column
+    column_index = start_line_i + token.column
 
     length = len(token.data)
-    print(text[start_line_i:column]
+    print(text[start_line_i:column_index]
           + color
-          + text[column:column + length]
+          + text[column_index:column_index + length]
           + ANSI_WHITE
-          + text[column + length:end_line_i])
-    print(' ' * (7 + column) + '^' + '~' * (length - 1))
-    print(start_line_i, end_line_i, column, length, token.data)
+          + text[column_index + length:end_line_i])
+    print(' ' * (7 + token.column) + '^' + '~' * (length - 1))
+
+
+def _print_line_with_arrow_and_note(token: Token, text: str, replace: bool, replace_str: str, color: str = ANSI_NOTE):
+    if replace:
+        _print_line_with_arrow(token, text, color=color)
+        print(color + ' ' * (7 + token.column) + replace_str + ANSI_WHITE)
+    else:
+        print(ANSI_LINE, end='')
+        print(str(token.line).rjust(4) + ' | ', end='')
+        print(ANSI_WHITE, end='')
+
+        start_line_i, end_line_i = _get_line_i(token, text)
+        column_index = start_line_i + token.column
+
+        length = len(token.data)
+        print(text[start_line_i:column_index + length]
+              + color
+              + replace_str
+              + ANSI_WHITE
+              + text[column_index + length:end_line_i])
+        print(' ' * (7 + token.column + len(token.data)) + '^' + '~' * (len(replace_str) - 1))
+        # TODO: this code is mostly duplicated
 
 
 if __name__ == '__main__':
@@ -62,8 +101,5 @@ if __name__ == '__main__':
     print(LINE)
     error(tokens, 5, text, 'Test message.', _exit=False)
     print(LINE)
-    for i in range(10):
-        _print_line_with_arrow_from_string(tokens[i], text)
-    print(LINE)
-    print(list([token.line, token.column] for token in tokens))
-    print(_get_line_i(tokens[0], text))
+    error_w_note(tokens, 2, text, 'Error message', True, ')', 'Note message', _exit=False)
+    note(tokens, 2, text, True, 'var_name', 'It can be a variable.')

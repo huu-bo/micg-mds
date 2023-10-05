@@ -96,5 +96,13 @@ func amongus(? obj) {  // ? = any datatype
 }
 
 func int bad(? a) {
-    return ?1
+    return ?1;
+}
+
+int global_var = 0;
+func use_global() {
+    // TODO: how to name this keyword?
+    global global_var;  // required to use global variables
+
+    global_var++;
 }
