@@ -5,14 +5,33 @@ line = 1
 column = 0
 
 
-class Token:
-    def __init__(self, t: str, data: str, pos: int):
-        self.index = pos - len(data)
-        self.type = t
-        self.data = data
+class Token_builder:
+    def __init__(self, data='', line_=None, column_=None, i_=None):
+        global line, column, i
+        if line_ is None:
+            line_ = line
+        if column_ is None:
+            column_ = column
+        if i_ is None:
+            i_ = i
 
-        self.line = line
-        self.column = column - len(data)
+        self.data: str = data
+        self.line: int = line_
+        self.column: int = column_
+        self.index: int = i_
+
+    def __repr__(self):
+        return f"[Builder '{self.data}']"
+
+
+class Token:
+    def __init__(self, type_: str, token: Token_builder):
+        self.index = token.index
+        self.type = type_
+        self.data = token.data
+
+        self.line = token.line
+        self.column = token.column
 
     def __repr__(self):
         return "['" + self.type + "', '" + self.data + "']"
@@ -84,14 +103,14 @@ CODE_SYNTAX = 1
 BRACE_SYNTAX = 2
 
 
-def token_type(string: str) -> Token:
+def token_type(token: Token_builder) -> Token:
     global i
-    if string in TOKENS:
-        return Token('TOKEN', string, i)
-    elif string in STATEMENTS:
-        return Token('STATEMENT', string, i)
+    if token.data in TOKENS:
+        return Token('TOKEN', token)
+    elif token in STATEMENTS:
+        return Token('STATEMENT', token)
     else:
-        return Token('NAME', string, i)  # TODO: use name_type to make faster
+        return Token('NAME', token)  # TODO: use name_type to make faster
 
 
 def name_type(string: str) -> str:
@@ -99,8 +118,8 @@ def name_type(string: str) -> str:
         return 'TYPE'
     elif string.isdecimal():
         return 'INT_LIT'
-    elif string == '??!??!':
-        return 'TOKEN'
+    # elif string == '??!??!':  # deprecated, use '?'
+    #     return 'TOKEN'
     else:
         return 'NAME'
 
@@ -115,7 +134,7 @@ def parse(string: str):
     line = 1
     column = 0
 
-    t = ''
+    t: Token_builder = Token_builder()
     incomment = False
     instring = False
     for c in string:
@@ -124,35 +143,38 @@ def parse(string: str):
                 line += 1
                 column = 0
                 i += 1
+
+                t = Token_builder()
                 continue
 
             if c == ' ':
-                if t:
+                if t.data:
                     tokens.append(token_type(t))
-                    t = ''
+                t = Token_builder(column_=column+1)
             elif c == '"':
-                if t:
+                if t.data:
                     tokens.append(token_type(t))
-                    t = ''
+                t = Token_builder()
                 instring = True
             elif c == '/' and string[i + 1] == '/':
-                if t:
+                if t.data:
                     tokens.append(token_type(t))
+                t = Token_builder()
                 incomment = True
             elif c in TOKENS:
-                if t:
+                if t.data:
                     tokens.append(token_type(t))
-                    t = ''
-                tokens.append(Token('TOKEN', c, i))
+                t = Token_builder(column_=column+1)
+                tokens.append(Token('TOKEN', Token_builder(data=c)))
             else:
-                t += c
+                t.data += c
 
             if t in TOKENS:
-                tokens.append(Token('TOKEN', t, i))
-                t = ''
+                tokens.append(Token('TOKEN', t))
+                t = Token_builder(column_=column+1)
             elif t in STATEMENTS:
-                tokens.append(Token('STATEMENT', t, i))
-                t = ''
+                tokens.append(Token('STATEMENT', t))
+                t = Token_builder(column_=column+1)
         elif incomment:
             if c == '\n':
                 incomment = False
@@ -164,10 +186,10 @@ def parse(string: str):
                 column = 0
 
             if c != '"':
-                t += c
+                t.data += c
             else:
-                tokens.append(Token('STR', t, i))
-                t = ''
+                tokens.append(Token('STR', t))
+                t = Token_builder()
                 instring = False
 
         # print(c, t)
@@ -183,3 +205,20 @@ def parse(string: str):
             tokens[i].type = 'TYPE'
 
     return tokens
+
+
+if __name__ == '__main__':
+    def _test_parse(text: str, expect: list):
+        tokens = parse(text)
+        assert tokens == expect, f'{tokens} != {expect}'
+
+    def _test_index(text: str, expect: list):
+        tokens = parse(text)
+        for i, token in enumerate(tokens):
+            assert token.line == expect[i][0], f'line {token.line} != {expect[i]} @ {token} {i}'
+            assert token.column == expect[i][1], f'column {token.column} != {expect[i]} @ {token} {i}'
+
+    _test_parse('print(a);', [['NAME', 'print'], ['TOKEN', '('], ['NAME', 'a'], ['TOKEN', ')'], ['TOKEN', ';']])
+    # TODO: test edge-cases
+
+    _test_index('print(a);\ntest;', [[1, 0], [1, 5], [1, 6], [1, 7], [1, 8], [2, 0], [2, 4]])
