@@ -97,6 +97,8 @@ if __name__ == '__main__':
 
     LINE = '-' * 40
 
+    # error_w_note(tokens, 0, text, 'message', False, ';', 'note mesage')
+
     error(tokens, 0, text, 'Test message.', _exit=False)
     print(LINE)
     error(tokens, 5, text, 'Test message.', _exit=False)

@@ -1,6 +1,7 @@
 from parser import parse, Token
 from typing import List, Tuple, Union, Dict
 from values import *
+import error
 
 COMPS = [
     '==', '!=', '<', '>', '<=', '>='
@@ -21,129 +22,12 @@ COMPS = [
 
 
 def expression(tokens: List[Token]):
-    if len(tokens) == 1:
-        return tokens[0]
-    if not tokens:
-        return
+    print('expression', tokens)
 
-    if tokens[0] == ['TOKEN', '{']:
-        tokens = tokens[1:]  # TODO: properly implement namespaces
-    if tokens[-1] == ['TOKEN', '}']:
-        tokens = tokens[:-1]
+    if len(tokens) > 2 and tokens[0].type == 'NAME' and tokens[1] == ['TOKEN', '(']:
+        print('YYYY')
 
-    # i = 0
-    # while i < len(tokens) - 3:
-    #     if tokens[i][0] == 'NAME' and tokens[i + 1] == ['TOKEN', '(']:
-    #         return ['FUNC', tokens[i][1]]
-    #
-    #     i += 1
-
-    print('    |', tokens)
-    #
-    # i = 0
-    # while i < len(tokens):
-    #     if tokens[i] == ['TOKEN', ';'] and not i + 1 == len(tokens):
-    #         return [expression(tokens[:i])] + [expression(tokens[i + 1:])]
-    #     elif tokens[i] == ['TOKEN', ';']:
-    #         return expression(tokens[:i])
-    #     i += 1
-
-    t = []
-    r = []
-    for i, token in enumerate(tokens):
-        if token == ['TOKEN', ',']:
-            if t:
-                r.append(expression(t))
-                t = []
-            else:
-                pass  # TODO: this allows for e.g. print(, , , , , , , , , , "a\n");
-        elif token == ['TOKEN', '(']:
-            break
-        else:
-            t.append(token)
-    if r:
-        r.append(expression(t))
-
-    if len(r) > 1:
-        return r
-
-    level = 0
-    i = 0
-    lhs = []
-    rhs = []
-    state = 'lhs'
-    while i < len(tokens):
-        if tokens[i] == ['TOKEN', '(']:
-            if level == 0 and state == 'lhs':
-                state = 'rhs'
-
-            level += 1
-        elif tokens[i] == ['TOKEN', ')']:
-            level -= 1
-            if level < 0:
-                error(tokens, i, data, "too many ')'")
-        elif state == 'lhs':
-            lhs.append(tokens[i])
-        elif state == 'rhs':
-            rhs.append(tokens[i])
-
-        i += 1
-
-    if lhs and rhs:
-        print('FOOOR', lhs, rhs)
-        if lhs[0] == ['STATEMENT', 'for']:
-            # error(tokens, 0, data, 'not implemented')
-            return 'for', for_expression(rhs)  # TODO: parse body
-        elif state == 'rhs':
-            return 'f', lhs, rhs
-
-    # i = 0
-    # while i < len(tokens):
-    #     if tokens[i] == ['TOKEN', '(']:
-    #         print(tokens[i:])
-    #         # print(func_args(tokens[i:]))
-    #
-    #         print(            tokens[i + 1:func_args(tokens[i:]) + 3])
-    #         print( expression(tokens[i + 1:func_args(tokens[i:]) + 3]))
-    #         args = expression(tokens[i + 1:func_args(tokens[i:]) + 3])
-    #         if args is None:
-    #             args = []
-    #         elif type(args) == Token:
-    #             args = [args]
-    #         return 'f', expression(tokens[:i]), args
-    #     i += 1
-
-    i = 0
-    level = 0
-    while i < len(tokens):
-        if tokens[i] == ['TOKEN', '(']:
-            level += 1
-        elif tokens[i] == ['TOKEN', ')']:
-            level -= 1
-        if not level:
-            if tokens[i] == ['TOKEN', '.']:
-                return '.', expression(tokens[:i]), expression(tokens[i + 1:])
-        i += 1
-
-    # TODO: () with math
-    i = 0
-    while i < len(tokens):
-        if tokens[i] == ['TOKEN', '+']:
-            return '+', expression(tokens[:i]), expression(tokens[i + 1:])
-        elif tokens[i] == ['TOKEN', '-']:
-            return '-', expression(tokens[:i]), expression(tokens[i + 1:])
-
-        i += 1
-
-    i = 0
-    while i < len(tokens):
-        if tokens[i] == ['TOKEN', '*']:
-            return '*', expression(tokens[:i]), expression(tokens[i + 1:])
-        elif tokens[i] == ['TOKEN', '/']:
-            return '/', expression(tokens[:i]), expression(tokens[i + 1:])
-        i += 1
-
-    error(tokens, 0, data, 'unknown grammar')
+    raise NotImplementedError
 
 
 def func_expression(tokens: List[Token]):
@@ -194,72 +78,6 @@ def func_args(tokens: List[Token]):
         assert False, 'no function closing brace (unexpected EOF)'
 
 
-def error(tokens: list, i: int, text: str, msg: str, note: Union[Tuple[int, str, bool]] = None):  # TODO: an explanation in the error message
-    print('\33[31m', end='')
-    print(tokens[i:i + 7])
-    # print(f'unknown syntax, line {tokens[i].line}')  # TODO: different kinds of error
-    print(f'line {tokens[i].line}')
-
-    j = tokens[i].index
-    while j > 0 and text[j] != '\n':
-        j -= 1
-    spaces_amount = tokens[i].column
-    j += 1
-    print('\33[0m', end='')
-    while j < len(text) and text[j] != '\n':
-        print(text[j], end='')
-        j += 1
-    print('\33[31m')
-    print(' ' * spaces_amount + '^' * len(tokens[i].data))
-
-    print(msg)
-
-    if note is not None:
-        if len(note) != 3:
-            raise ValueError('note should be (index: int, text: str, replace: bool)')
-
-        if type(note[0]) != int:
-            raise ValueError('note should be (index: int, text: str, replace: bool)')
-        if type(note[1]) != str:
-            raise ValueError('note should be (index: int, text: str, replace: bool)')
-        if type(note[2]) != bool:
-            raise ValueError('note should be (index: int, text: str, replace: bool)')
-
-        print('\33[96mnote:')
-
-        if note[2]:
-            line = ''
-
-            j = tokens[i].index
-            while j > 0 and text[j] != '\n':
-                j -= 1
-            j += 1
-            line_start = j
-            print('\33[0m', end='')
-            while j < len(text) and text[j] != '\n':
-                line += text[j]
-                j += 1
-            spaces_amount = tokens[note[0]].column
-            print(line)
-            print('\33[96m' + ' ' * spaces_amount + '^' * len(tokens[i].data))
-            print(' ' * spaces_amount + note[1])
-        else:
-            j = tokens[i].index
-            while j > 0 and text[j] != '\n':
-                j -= 1
-            j += 1
-            line_start = j
-            print('\33[0m', end='')
-            while j < len(text) and text[j] != '\n':
-                print(text[j], end='')
-                j += 1
-            spaces_amount = j - line_start  # TODO: always places at the end of the line
-            print('\33[96m' + note[1])
-            print(' ' * spaces_amount + '^' * len(note[1]))
-
-    exit(1)
-
-
 # import Console as c;
 # import Test;
 # from Lib import func;
@@ -302,11 +120,11 @@ def parse_text(tokens: List[Token], text: str):
 
         elif tokens[i] == ['STATEMENT', 'from']:
             if tokens[i + 1].type != 'NAME':
-                error(tokens, i + 1, text, 'expected name')
+                error.error(tokens, i + 1, text, 'expected name')
             if tokens[i + 2] != ['STATEMENT', 'import']:
-                error(tokens, i + 2, text, "expected 'import'", note=(i + 2, 'import', True))
+                error.error_w_note(tokens, i + 2, text, "expected 'import'", True, 'import', '')
             if tokens[i + 3].type != 'NAME':
-                error(tokens, i + 3, text, 'expected name')
+                error.error(tokens, i + 3, text, 'expected name')
 
             if tokens[i + 4] == ['TOKEN', ';']:  # from A import B;
                 constants[tokens[i + 3].data] = LibraryFunction(tokens[i + 3].data, tokens[i + 1])
@@ -324,9 +142,10 @@ def parse_text(tokens: List[Token], text: str):
                         i = l
                     elif tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);
                         if tokens[l] != ['STATEMENT', 'named']:
-                            error(tokens, l, text, "expected 'named'", note=(l, 'named', True))
+                            error.error_w_note(tokens, l, text, "Expected 'named'",
+                                               True, 'named', '')
                         if tokens[l + 1].type != 'NAME':
-                            error(tokens, l + 1, text, 'expected name')  # TODO: information about what is a name and what not
+                            error.error(tokens, l + 1, text, 'expected name')  # TODO: information about what is a name and what not
 
                         name = tokens[l + 1].data
                         if tokens[l + 2] == ['TOKEN', '(']:  # from A import B as (...) named C(...);
@@ -334,7 +153,8 @@ def parse_text(tokens: List[Token], text: str):
                             l += func_args(tokens[l:])  # TODO
 
                             if tokens[l + 1] != ['TOKEN', ';']:
-                                error(tokens, l, text, "expected semicolon", note=(l+1, ';', False))
+                                error.error_w_note(tokens, l, text, "expected semicolon",
+                                                   False, ';', 'Place semicolon here')
 
                             l += 1
                             i = l
@@ -344,11 +164,13 @@ def parse_text(tokens: List[Token], text: str):
                             # raise NotImplementedError('from A import B as () named C();')  # implemented?
                     else:  # from A import B as (...) named C;
                         if tokens[l] != ['STATEMENT', 'named']:
-                            error(tokens, l, text, '', (l, 'named', True))
+                            error.error_w_note(tokens, l, text, "Expected 'named'",
+                                               True, 'named', '')
                         if tokens[l + 1].type != 'NAME':
-                            error(tokens, l + 1, text, 'expected name of func')
+                            error.error(tokens, l + 1, text, 'Expected name')
                         if tokens[l + 2] != ['TOKEN', ';']:
-                            error(tokens, l + 1, text, 'expected semicolon', (0, ';', False))  # TODO: alignment broken
+                            error.error_w_note(tokens, l+1, text, 'Expected semicolon',
+                                               False, ';', 'Place semicolon here')
 
                         name = tokens[l + 1].data
                         constants[name] = AdvancedLibraryFunction(name, body)
@@ -357,9 +179,10 @@ def parse_text(tokens: List[Token], text: str):
                         # raise NotImplementedError('from A import B as (...) named C;')
                 else:  # from A import B as C;
                     if tokens[i + 5].type != 'NAME':
-                        error(tokens, i + 5, text, 'expected name')
+                        error.error(tokens, i + 5, text, 'Expected name')
                     if tokens[i + 6] != ['TOKEN', ';']:
-                        error(tokens, i + 5, text, 'expected semicolon', note=(0, ';', False))
+                        error.error_w_note(tokens, i + 5, text, 'Expected semicolon',
+                                           False, ';', 'Place semicolon here')
 
                     constants[tokens[i + 5].data] = LibraryFunction(tokens[i + 3].data, tokens[i + 1].data)
                     # constants[tokens[i + 5].data] = [['library', tokens[i + 1].data], ['func', tokens[i + 3].data]]
@@ -397,7 +220,7 @@ def parse_text(tokens: List[Token], text: str):
                     assert False, 'incorrect function definition'
             elif tokens[i + 1].type == 'TYPE':  # func TYPE NAME () {
                 if tokens[i + 2].type != 'NAME':
-                    error(tokens, i + 2, text, 'invalid name')
+                    error.error(tokens, i + 2, text, 'invalid name')
                 skip, args = func_define(tokens[i + 4:])
                 name = tokens[i + 2].data
                 ret_type = tokens[i + 1].data
@@ -421,14 +244,14 @@ def parse_text(tokens: List[Token], text: str):
                     break
 
                 if tokens[i].type != 'TYPE':
-                    error(tokens, i, text, 'there should be a type before a variable name')
+                    error.error(tokens, i, text, 'There should be a type before a variable name')
 
                 if tokens[i].data not in types:
                     types.append(tokens[i].data)
                 # print(types)
                 i += 1
             else:
-                error(tokens, i-1, text, 'unexpected eof\nexpected variable name')
+                error.error(tokens, i-1, text, 'unexpected eof\nexpected variable name')
 
             assert tokens[i + 1] == ['TOKEN', ';'] or tokens[i + 1] == ['TOKEN', '='], "expected ';' or '='"
 
@@ -528,13 +351,14 @@ def func_body(tokens: List[Token]) -> Tuple[int, List[Token]]:
 
 
 if __name__ == '__main__':
-    with open('main.mds', 'r') as file:
-        data = file.read()
+    # with open('main.mds', 'r') as file:
+    #     data = file.read()
+    data = 'print(a);'
 
     # print(parse(data))
     # parse_text(parse(data), data)
 
-    print(expression(parse('print(a); ')))
+    print(expression(parse(data)))
 
     # tokens = parse('1*(2+3); ')
     # t = []

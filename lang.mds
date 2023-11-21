@@ -105,4 +105,12 @@ func use_global() {
     global global_var;  // required to use global variables
 
     global_var++;
+
+    {
+        global_var++;  // error
+    }
+    // but if you do want outer scope variables
+    #{
+        global_var++;
+    }
 }
