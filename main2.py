@@ -1,4 +1,4 @@
-from parser import parse, Token
+from lexer import lex, Token
 from typing import List, Tuple, Union, Dict
 from values import *
 import error
@@ -358,7 +358,7 @@ if __name__ == '__main__':
     # print(parse(data))
     # parse_text(parse(data), data)
 
-    print(expression(parse(data)))
+    print(expression(lex(data)))
 
     # tokens = parse('1*(2+3); ')
     # t = []

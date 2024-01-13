@@ -1,5 +1,5 @@
 from typing import Union, Tuple, List
-from parser import Token, parse
+from lexer import Token, lex
 
 ANSI_ERROR = '\33[31m'
 ANSI_WHITE = '\33[0m'
@@ -91,7 +91,7 @@ def _print_line_with_arrow_and_note(token: Token, text: str, replace: bool, repl
 if __name__ == '__main__':
     text = '''print ( ;
     test(tester, tester2);'''
-    tokens = parse(text)
+    tokens = lex(text)
 
     print(tokens)
 

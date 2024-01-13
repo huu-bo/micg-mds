@@ -124,7 +124,7 @@ def name_type(string: str) -> str:
         return 'NAME'
 
 
-def parse(string: str):
+def lex(string: str) -> List[Token]:
     global i
     i = 0
 
@@ -209,11 +209,11 @@ def parse(string: str):
 
 if __name__ == '__main__':
     def _test_parse(text: str, expect: list):
-        tokens = parse(text)
+        tokens = lex(text)
         assert tokens == expect, f'{tokens} != {expect}'
 
     def _test_index(text: str, expect: list):
-        tokens = parse(text)
+        tokens = lex(text)
         for i, token in enumerate(tokens):
             assert token.line == expect[i][0], f'line {token.line} != {expect[i]} @ {token} {i}'
             assert token.column == expect[i][1], f'column {token.column} != {expect[i]} @ {token} {i}'
