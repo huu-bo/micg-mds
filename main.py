@@ -2,6 +2,7 @@ from lexer import lex, Token
 from typing import List, Tuple, Union, Dict
 from values import *
 import error
+import ast
 
 COMPS = [
     '==', '!=', '<', '>', '<=', '>='
@@ -30,31 +31,32 @@ def expression(tokens: List[Token]):
     raise NotImplementedError
 
 
-def func_expression(tokens: List[Token]):
-    r = []
-    t = []
-    level = 0
-    for token in tokens:
-        if token == ['TOKEN', '('] or token == ['TOKEN', '{']:
-            # if level == 0:
-            #     r.append(expression(t))
-            #     t = []
-            level += 1
-        elif token == ['TOKEN', ')'] or token == ['TOKEN', '}']:
-            level -= 1
-        if level == 1:  # for 'for' loops
-            if token == ['TOKEN', ';']:
-                r.append(expression(t))
-                t = []
-            else:
-                t.append(token)
-        else:
-            t.append(token)
-
-    if t:
-        pass  # TODO: this means that the last line did not have a semicolon
-
-    return r
+def func_expression(tokens: List[Token]) -> List[Token]:
+    pass
+    # r = []
+    # t = []
+    # level = 0
+    # for token in tokens:
+    #     if token == ['TOKEN', '('] or token == ['TOKEN', '{']:
+    #         # if level == 0:
+    #         #     r.append(expression(t))
+    #         #     t = []
+    #         level += 1
+    #     elif token == ['TOKEN', ')'] or token == ['TOKEN', '}']:
+    #         level -= 1
+    #     if level == 1:  # for 'for' loops
+    #         if token == ['TOKEN', ';']:
+    #             r.append(expression(t))
+    #             t = []
+    #         else:
+    #             t.append(token)
+    #     else:
+    #         t.append(token)
+    #
+    # if t:
+    #     pass  # TODO: this means that the last line did not have a semicolon
+    #
+    # return r
 
 
 def for_expression(tokens: List[Token]):
