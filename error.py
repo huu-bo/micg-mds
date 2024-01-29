@@ -1,5 +1,7 @@
 from typing import Union, Tuple, List
 from lexer import Token, lex
+import traceback
+import sys
 
 ANSI_ERROR = '\33[31m'
 ANSI_WHITE = '\33[0m'
@@ -15,6 +17,7 @@ def error(tokens: List[Token], i: int, text: str, msg: str, _exit=True):
     print(f'{ANSI_ERROR}ERROR: {msg}{ANSI_WHITE}')
 
     if _exit:
+        _trace()
         exit(1)
 
 
@@ -27,6 +30,7 @@ def error_w_note(tokens: List[Token], i: int, text: str, msg: str, note_replace:
     note(tokens, i, text, note_replace, note_replace_str, note_msg)
 
     if _exit:
+        _trace()
         exit(1)
 
 
@@ -86,6 +90,11 @@ def _print_line_with_arrow_and_note(token: Token, text: str, replace: bool, repl
               + text[column_index + length:end_line_i])
         print(' ' * (7 + token.column + len(token.data)) + '^' + '~' * (len(replace_str) - 1))
         # TODO: this code is mostly duplicated
+
+
+def _trace() -> None:
+    sys.stdout.flush()
+    traceback.print_stack()
 
 
 if __name__ == '__main__':

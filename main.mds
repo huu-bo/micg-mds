@@ -1,9 +1,9 @@
-from console import print;
+from console import println;
 
 func int main() {
-    print("test message");
+    println("test message");
 
     int a = 3;
-    // a += a + 1 * 2;
-    print(a);
+    a += a + 1 * 2;
+    println(a);
 }

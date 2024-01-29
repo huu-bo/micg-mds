@@ -12,16 +12,23 @@ class Scope(Enum):
 
 @dataclass
 class Node(ABC):
-    def __new__(cls, *args, **kwargs):
-        # https://stackoverflow.com/a/60669138
-        if cls == Node or cls.__bases__[0] == Node:
-            raise TypeError("Cannot instantiate abstract class.")
-        return super().__new__(cls)
+    # def __new__(cls, *args, **kwargs):
+    #     # https://stackoverflow.com/a/60669138
+    #     if cls == Node or cls.__bases__[0] == Node:
+    #         raise TypeError("Cannot instantiate abstract class.")
+    #     return super().__new__(cls)
+    pass
 
 
 @dataclass
 class Type(Node):
-    children: List[Optional[Type]]
+    type: List[SubType]
+
+
+@dataclass
+class SubType(Node):
+    type: str
+    children: List[Type]
 
 
 class BlockType(Enum):
@@ -52,4 +59,17 @@ class Func(Node):
     scope: Scope
     return_type: Type
     args: FuncArgs
-    body: Block
+    body: Block | None
+
+
+@dataclass
+class Import(Node):
+    module: str
+    as_: str | None
+
+
+@dataclass
+class ImportFrom(Node):
+    module: str
+    item: str
+    as_: str | None

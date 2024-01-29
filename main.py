@@ -1,8 +1,8 @@
+import parser
 from lexer import lex, Token
 from typing import List, Tuple, Union, Dict
 from values import *
 import error
-import ast
 
 COMPS = [
     '==', '!=', '<', '>', '<=', '>='
@@ -353,20 +353,9 @@ def func_body(tokens: List[Token]) -> Tuple[int, List[Token]]:
 
 
 if __name__ == '__main__':
-    # with open('main.mds', 'r') as file:
-    #     data = file.read()
-    data = 'print(a);'
+    with open('main.mds', 'r') as file:
+        data = file.read()
+    # data = 'print(a);'
 
-    # print(parse(data))
-    # parse_text(parse(data), data)
-
-    print(expression(lex(data)))
-
-    # tokens = parse('1*(2+3); ')
-    # t = []
-    # for token in tokens:
-    #     if token == ['TOKEN', ';']:
-    #         print(expression(t))
-    #         t = []
-    #     else:
-    #         t.append(token)
+    tokens = lex(data)
+    tree = parser.parse_global(tokens, data)

@@ -38,13 +38,16 @@ class Token:
 
     def __eq__(self, other):
         if type(other) != list:
-            return NotImplemented
+            raise NotImplemented
         if len(other) != 2:
             raise TypeError
         if type(other[0]) != str:
             raise TypeError
         if type(other[1]) != str:
             raise TypeError
+
+        if other[1] == 'TYPE':  # temporary
+            raise ValueError
 
         return self.type == other[0] and self.data == other[1]
 
@@ -73,29 +76,16 @@ STATEMENTS = [
 
     'for'
 ]
-TYPES = [
-    'int',
-    'void',
-    'char',
-    'range'
+# TODO: more data types
+#           something like rust range https://doc.rust-lang.org/std/ops/struct.Range.html
+#           hashmap
+#           classes
+#           interfaces
+#           tuples (type of tuple is like '(int, str)')
 
-    # TODO: more data types
-    #           something like rust range https://doc.rust-lang.org/std/ops/struct.Range.html
-    #           hashmap
-    #           classes
-    #           interfaces
-    #           tuples (type of tuple is like '(int, str)')
-
-    # TODO: nullable data type or variable type?
-    #       nullable int  a;
-    #       nullable<int> a;
-]
-TYPE_MODS = [
-    'unsigned',
-    'final',
-    'private'
-]
-TYPES += TYPE_MODS
+# TODO: nullable data type or variable type?
+#       nullable int  a;
+#       nullable<int> a;
 
 
 FILE_SYNTAX = 0
@@ -114,9 +104,7 @@ def token_type(token: Token_builder) -> Token:
 
 
 def name_type(string: str) -> str:
-    if string in TYPES:
-        return 'TYPE'
-    elif string.isdecimal():
+    if string.isdecimal():
         return 'INT_LIT'
     # elif string == '??!??!':  # deprecated, use '?'
     #     return 'TOKEN'
@@ -169,10 +157,10 @@ def lex(string: str) -> List[Token]:
             else:
                 t.data += c
 
-            if t in TOKENS:
+            if t.data in TOKENS:
                 tokens.append(Token('TOKEN', t))
                 t = Token_builder(column_=column+1)
-            elif t in STATEMENTS:
+            elif t.data in STATEMENTS:
                 tokens.append(Token('STATEMENT', t))
                 t = Token_builder(column_=column+1)
         elif incomment:
@@ -219,6 +207,8 @@ if __name__ == '__main__':
             assert token.column == expect[i][1], f'column {token.column} != {expect[i]} @ {token} {i}'
 
     _test_parse('print(a);', [['NAME', 'print'], ['TOKEN', '('], ['NAME', 'a'], ['TOKEN', ')'], ['TOKEN', ';']])
+    _test_parse('from a import b;',
+                [['STATEMENT', 'from'], ['NAME', 'a'], ['STATEMENT', 'import'], ['NAME', 'b'], ['TOKEN', ';']])
     # TODO: test edge-cases
 
     _test_index('print(a);\ntest;', [[1, 0], [1, 5], [1, 6], [1, 7], [1, 8], [2, 0], [2, 4]])

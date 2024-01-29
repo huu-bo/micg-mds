@@ -13,6 +13,8 @@ from Console import print as ("Hello, World!") named print();
 
 from Console import print as ("Hello, World!") named hello_world;
 
+public from Console import print;
+
 // inject into namespace
 //from Console import print as (?1 + "!\n") named console.printX;
 // TODO: implement namespace injection
