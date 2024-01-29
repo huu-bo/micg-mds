@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from lexer import Token
+from lexer import Token, lex
 import error
 import ast
 
@@ -109,6 +109,76 @@ def parse_global(tokens: list[Token], text: str) -> list[ast.Func | ast.Import |
     def parse_func_body() -> list[ast.Expression]:
         expect('{', 'TOKEN')
 
+        out = []
+        while not next_('}', 'TOKEN'):
+            out.append(parse_expr())
+            expect(';', 'TOKEN')
+
+        return out
+
+    def parse_expr() -> ast.Expression:
+        asso = {
+            '+': [(2, 'left')],
+            '-': [(2, 'left'), (5, 'unary')],
+            '*': [(3, 'left')],
+            '/': [(3, 'left')],
+            '^': [(4, 'right')],
+            '++': [(5, 'unary')],
+            '--': [(5, 'unary')],
+            'callfunc': 6
+        }
+        # /home/huub/Desktop/mds operator precedence.txt
+        asso = {
+            1: [':=', '@'],
+            2: ['^^'],
+            3: ['||'],
+            4: ['&&'],
+            5: ['!'],
+            6: ['in', 'not in', '<', '<=', '>', '>=', '!=', '=='],
+            7: ['|'],
+            8: ['^'],
+            9: ['&'],
+            10: ['<<', '>>'],
+            11: ['+', '-'],
+            12: ['*', '/', '\\', '%', '%%'],
+            13: ['-x', '~'],
+            14: ['**']
+        }
+        min_asso = min(asso)
+        max_asso = max(asso)
+        right = {'**'}
+
+        operator = []
+        out: ast.Expression | None = None
+        while not next_(';', 'TOKEN', inc=False):
+            if next_(type_='INT_LIT', inc=False):
+                operator.append(expect(type_='INT_LIT'))
+            elif next_('(', 'TOKEN', inc=False):
+                operator.append(expect('(', 'TOKEN'))
+            elif next_(')', 'TOKEN', inc=False):
+                try:
+                    while operator[-1] != ['TOKEN', '(']:
+                        raise NotImplementedError
+                except IndexError:
+                    error.error_w_note(tokens, 0, text,
+                                       "expected '('",
+                                       True, ' ', "to open this ')'")
+
+                expect(')', 'TOKEN')
+                # TODO: function calls
+            elif next_(type_='NAME', inc=False):
+                operator.append(expect(type_='NAME'))
+                operator.append('callfunc')
+
+            else:
+                try:
+                    error.error(tokens, 0, text, 'unexpected')
+                except IndexError:
+                    print('unexpected EOF')
+                    exit(1)
+
+        print(out)
+
         raise NotImplementedError
 
     def parse_type() -> ast.Type:
@@ -158,3 +228,13 @@ def parse_global(tokens: list[Token], text: str) -> list[ast.Func | ast.Import |
             error.error(tokens, 0, text, f"unexpected token")
 
     return out
+
+
+if __name__ == '__main__':
+    def test(text: str, eq) -> None:
+        l = parse_global(lex(text), text)
+        r = eq
+        assert l == r, f'{l} != {r}'
+
+    test('func void foo() {}', [ast.Func(scope=ast.Scope.PRIVATE, return_type=ast.Type(type=[]), args=ast.FuncArgs(args=[]), body=None)])
+    test('func void foo () {print(1 + 2)}', 0)

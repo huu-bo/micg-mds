@@ -38,7 +38,7 @@ class Token:
 
     def __eq__(self, other):
         if type(other) != list:
-            raise NotImplemented
+            raise NotImplementedError
         if len(other) != 2:
             raise TypeError
         if type(other[0]) != str:

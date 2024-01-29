@@ -73,3 +73,23 @@ class ImportFrom(Node):
     module: str
     item: str
     as_: str | None
+
+
+class Expression(Node, ABC):
+    pass
+
+
+class OperationType(Enum):
+    pass  # TODO
+
+
+@dataclass
+class Operation(Expression):
+    type: OperationType
+
+
+@dataclass
+class Assignment(Expression):
+    lhs: Expression
+    rhs: Expression
+    op_type: Optional[OperationType]
