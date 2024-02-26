@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from lexer import Token, lex
 import error
-import ast
+import ast_
 
 
-def parse_global(tokens: list[Token], text: str) -> list[ast.Func | ast.Import | ast.ImportFrom]:
+def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import | ast_.ImportFrom]:
     _l_t: Token | None = None
 
     def expect(data: str | None = None, type_: str | None = None) -> Token:
@@ -83,30 +83,30 @@ def parse_global(tokens: list[Token], text: str) -> list[ast.Func | ast.Import |
             _l_t = None  # TODO: is this the correct behaviour?
         return True
 
-    def func_head(scope: ast.Scope | None) -> ast.Func:
+    def func_head(scope: ast_.Scope | None) -> ast_.Func:
         if scope is None:
-            scope = ast.Scope.PRIVATE  # TODO: allow implicit private?
+            scope = ast_.Scope.PRIVATE  # TODO: allow implicit private?
 
         expect('func', 'STATEMENT')
 
         if next_(type_='NAME', inc=False):
-            type_ = ast.Type([])
+            type_ = ast_.Type([])
             expect(type_='NAME')
         else:
             type_ = parse_type()
         name = expect(type_='NAME')
         if next_('{', 'TOKEN', inc=False):
-            args = ast.FuncArgs([])
+            args = ast_.FuncArgs([])
         else:
             expect('(', 'TOKEN')
-            args = ast.FuncArgs([])
+            args = ast_.FuncArgs([])
 
             while not next_(')', 'TOKEN'):
                 raise NotImplementedError('function definition arguments')
 
-        return ast.Func(scope, type_, args, None)
+        return ast_.Func(scope, type_, args, None)
 
-    def parse_func_body() -> list[ast.Expression]:
+    def parse_func_body() -> list[ast_.Expression]:
         expect('{', 'TOKEN')
 
         out = []
@@ -116,7 +116,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast.Func | ast.Import |
 
         return out
 
-    def parse_expr() -> ast.Expression:
+    def parse_expr() -> ast_.Expression:
         asso = {
             '+': [(2, 'left')],
             '-': [(2, 'left'), (5, 'unary')],
@@ -149,7 +149,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast.Func | ast.Import |
         right = {'**'}
 
         operator = []
-        out: ast.Expression | None = None
+        out: ast_.Expression | None = None
         while not next_(';', 'TOKEN', inc=False):
             if next_(type_='INT_LIT', inc=False):
                 operator.append(expect(type_='INT_LIT'))
@@ -181,11 +181,11 @@ def parse_global(tokens: list[Token], text: str) -> list[ast.Func | ast.Import |
 
         raise NotImplementedError
 
-    def parse_type() -> ast.Type:
+    def parse_type() -> ast_.Type:
         if next_('(', 'TOKEN'):
             raise NotImplementedError('tuples')
         else:
-            return ast.Type([ast.SubType(expect(type_='NAME').data, [])])
+            return ast_.Type([ast_.SubType(expect(type_='NAME').data, [])])
 
     out = []
 
@@ -197,9 +197,9 @@ def parse_global(tokens: list[Token], text: str) -> list[ast.Func | ast.Import |
         # TODO: abstract 'private' and 'public' to list
         elif next_('private', 'STATEMENT', inc=False) or next_('public', 'STATEMENT', inc=False):
             if next_('private', 'STATEMENT'):
-                scope = ast.Scope.PRIVATE
+                scope = ast_.Scope.PRIVATE
             elif next_('public', 'STATEMENT'):
-                scope = ast.Scope.PUBLIC
+                scope = ast_.Scope.PUBLIC
             else:
                 raise AssertionError
 
@@ -223,7 +223,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast.Func | ast.Import |
             else:
                 as_ = expect(type_='NAME')
 
-            out.append(ast.ImportFrom(module.data, item.data, as_))
+            out.append(ast_.ImportFrom(module.data, item.data, as_))
         else:
             error.error(tokens, 0, text, f"unexpected token")
 
@@ -236,5 +236,5 @@ if __name__ == '__main__':
         r = eq
         assert l == r, f'{l} != {r}'
 
-    test('func void foo() {}', [ast.Func(scope=ast.Scope.PRIVATE, return_type=ast.Type(type=[]), args=ast.FuncArgs(args=[]), body=None)])
+    test('func void foo() {}', [ast_.Func(scope=ast_.Scope.PRIVATE, return_type=ast_.Type(type=[]), args=ast_.FuncArgs(args=[]), body=None)])
     test('func void foo () {print(1 + 2)}', 0)

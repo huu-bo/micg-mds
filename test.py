@@ -1,8 +1,12 @@
 # basic shunting yard parser
 # reference: https://en.wikipedia.org/wiki/Shunting_yard_algorithm
+from __future__ import annotations
 
 import error
 import lexer
+from dataclasses import dataclass
+from typing import Callable
+# import ast
 Token = lexer.Token
 
 
@@ -14,14 +18,24 @@ def is_int(s: Token):
         return False
 
 
+@dataclass
+class Node:
+    operation: str
+    children: 'list[Node | int]'
+
+    def __repr__(self):
+        c = '\n'.join('\n'.join('\t' + line for line in repr(child).splitlines()) for child in self.children)
+        return f'{self.operation}\n{c}'
+
+
 # tokens = ['1', '+', '2', '*', '3', '*', '4']
 # tokens = ['1', '*', '2', '+', '3']
 # tokens = ['1', '+', '2', '-', '3']
 # tokens = ['(', '1', '+', '2', ')', '^', '3']
 # tokens = ['print', '(', '1', '+', '1', ',', '2', ')']
 # tokens = ['1', '+', 'print', '(', '1', '+', '1', ',', 'print', '(', '2', ')', ',', '3', ')', '+', '2']
-# tokens = lexer.lex('1 + print(1 + 1, print(2), 3) + 2')
-tokens = lexer.lex('1 + - 1 * 1')
+tokens = lexer.lex('1 + print(1 + 1, print(2), 3) + 2 ')
+# tokens = lexer.lex('1 + 2 * 3 + 4 ')
 
 asso = {'callfunc': 5, '+': 2, '-': 2, '*': 3, '/': 3, '^': 4}
 asso_dir = {'+': 'left', '-': 'left', '*': 'left', '/': 'left', '^': 'right'}
@@ -34,82 +48,125 @@ functions = {'print'}
 # +         2           Left
 # −         2           Left
 
-output = []
-operator = []
-for token in tokens:
-    if is_int(token):
-        output.append(token)
-    # elif token == ['TOKEN', ';']:
-    #     if len(operator) != 0:
-    #         raise SyntaxError(operator)
-    elif token == ['TOKEN', '(']:
-        operator.append(token)
-    elif token == ['TOKEN', ')']:
-        try:
-            while operator[-1] != ['TOKEN', '(']:
-                output.append(operator.pop())
-            operator.pop()
-        except IndexError:
-            raise SyntaxError("expected '('")
-        if len(operator) >= 1 and operator[-1] in functions:
-            output.append(operator.pop())
-    elif token.data in functions:
-        output.append(token)
-        operator.append('callfunc')
-    elif token == ['TOKEN', ',']:
-        try:
-            while operator[-1] != ['TOKEN', '(']:
-                output.append(operator.pop())
-        except IndexError:
-            raise SyntaxError("expected '('")
+
+def expect(data: str | None = None, type_: str | None = None) -> Token:
+    global tokens
+
+    if data is None and type_ is None:
+        raise ValueError('Either data or type_ must be provided')
+
+    t = tokens.pop(0)
+    if type_ is not None and t.type != type_:
+        raise SyntaxError(f'{type_} != {t.type} @ {t.index}')
+    if data is not None and t.data != data:
+        raise SyntaxError(f'{data} != {t.data} @ {t.index}')
+
+    return t
+
+
+def accept(data: str | None = None, type_: str | None = None, inc: bool = True) -> bool:
+    global tokens
+
+    if not tokens:
+        return False
+
+    if data is None and type_ is None:
+        raise ValueError('Either data or type_ must be provided')
+
+    t = tokens[0]
+    if type_ is not None and t.type != type_:
+        return False
+    if data is not None and t.data != data:
+        return False
+
+    if inc:
+        tokens.pop(0)
+    return True
+
+
+# def expr() -> Node:
+#     if is_int()
+
+
+line = '-' * 20
+
+print('tokens:', tokens)
+
+print(line, 'parsing')
+
+
+def _op(ops: list[str], next_: Callable[[], Node | int]) -> Node | int:
+    lhs = next_()
+    while True:
+        op = None
+        for o in ops:
+            if accept(data=o):
+                op = o
+
+                if op is None:
+                    raise ValueError
+                break
+
+        if op is not None:
+            rhs = next_()
+            lhs = Node(op, [lhs, rhs])
+        else:
+            return lhs
+
+
+def addition() -> Node | int:
+    return _op(['+', '-'], multiplication)
+
+    # lhs = multiplication()
+    # if accept(data='+'):
+    #     op = '+'
+    # elif accept(data='-'):
+    #     op = '-'
+    # else:
+    #     raise SyntaxError()
+    # rhs = multiplication()
+    #
+    # return Node(op, [lhs, rhs])
+
+
+def multiplication() -> Node | int:
+    return _op(['*', '/'], parenthesis)
+
+
+def parenthesis() -> Node | int:
+    if accept(data='('):
+        res = addition()
+        expect(data=')')
+        return res
     else:
-        operator.append(token)
+        return function()
 
-        while (
-                len(operator) >= 2
-                and operator[-2] != ['TOKEN', '(']
-                and operator[-2] != 'callfunc'
-                and (
-                        asso[operator[-1].data] < asso[operator[-2].data]
-                        or (
-                                asso[operator[-1].data] == asso[operator[-2].data]
-                                and asso_dir[operator[-1].data] == 'left'
-                        )
-                )
-        ):
-            output.append(operator.pop(-2))
 
-    # print(operator)
-    print(output, operator)
+def function() -> Node | int:
+    if accept(type_='NAME', inc=False):
+        f = expect(type_='NAME')
 
-if '(' in operator:
-    raise SyntaxError("expected ')'")
+        expect(data='(')
 
-output += reversed(operator)
-print(output)
+        values = [addition()]
+        while accept(data=','):
+            values.append(addition())
 
-# stack = []
-# for token in output:
-#     if is_int(token):
-#         stack.append(token)
-#     elif token == 'callfunc':
-#         # stack.append(token)
-#         i = 0
-#         removed = []
-#         while stack[-1] not in functions:
-#             i += 1
-#             removed.append(stack.pop())
-#         stack.pop()
-#         stack += removed
-#         stack.append(i)
-#         stack.append(token)
-#     elif token in functions:
-#         stack.append(token)
-#     elif (is_int(stack[-1]) or stack[-1] == 'node') and (is_int(stack[-2] or stack[-2] == 'node')):
-#         stack.pop()
-#         stack.pop()
-#         stack.append('node')
-#     else:
-#         stack.append(token)
-#
-#     print(stack)
+        expect(data=')')
+        return Node('call', [f.data] + values)
+    else:
+        return negation()
+
+
+def negation() -> Node | int:
+    if accept(data='-'):
+        return Node('neg', [parenthesis()])
+    else:
+        return value()
+
+
+def value() -> Node | int:
+    return int(expect(type_='INT_LIT').data)
+
+
+print(addition())
