@@ -117,17 +117,6 @@ def _op(ops: list[str], next_: Callable[[], Node | int]) -> Node | int:
 def addition() -> Node | int:
     return _op(['+', '-'], multiplication)
 
-    # lhs = multiplication()
-    # if accept(data='+'):
-    #     op = '+'
-    # elif accept(data='-'):
-    #     op = '-'
-    # else:
-    #     raise SyntaxError()
-    # rhs = multiplication()
-    #
-    # return Node(op, [lhs, rhs])
-
 
 def multiplication() -> Node | int:
     return _op(['*', '/'], parenthesis)

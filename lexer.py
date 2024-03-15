@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 i = 0
@@ -110,6 +112,13 @@ def name_type(string: str) -> str:
     #     return 'TOKEN'
     else:
         return 'NAME'
+
+
+def lex_number(string: str) -> int | float:
+    try:
+        return int(string)
+    except ValueError:
+        return float(string)
 
 
 def lex(string: str) -> List[Token]:
