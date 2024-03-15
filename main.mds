@@ -3,7 +3,7 @@ from console import println;
 func int main() {
     println("test message");
 
-    int a = 3;
+    a: int = 3;
     a += a + 1 * 2;
-    println(a);
+    println(a::str);
 }

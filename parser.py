@@ -90,11 +90,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
 
         expect('func', 'STATEMENT')
 
-        if accept(type_='NAME', inc=False):
-            type_ = ast_.Type([])
-            expect(type_='NAME')
-        else:
-            type_ = parse_type()
+        type_ = parse_type()
         name = expect(type_='NAME')
         if accept('{', 'TOKEN', inc=False):
             args = ast_.FuncArgs([])
@@ -103,7 +99,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             args = ast_.FuncArgs([])
 
             while not accept(')', 'TOKEN'):
-                raise NotImplementedError('function definition arguments')
+                raise NotImplementedError('function definition arguments')  # TODO
 
         return ast_.Func(scope, type_, args, None)
 
@@ -117,6 +113,21 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
 
         out = []
         while not accept('}', 'TOKEN'):
+            # TODO: '+=' etc.
+            if len(tokens) > 2 and tokens[0].type == 'NAME' and tokens[1].data == ':':
+                var_name = tokens.pop(0).data
+                tokens.pop(0)
+
+                type_ = parse_type()
+                out.append(ast_.VarDef(var_name, type_))
+                if accept(data=';'):
+                    continue
+
+                expect(data='=')
+                out.append(ast_.VarAssignment(var_name, parse_expr()))
+                expect(data=';')
+                continue
+
             out.append(parse_expr())
             expect(';', 'TOKEN')
 
@@ -142,6 +153,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             15: ['**']
         }
         _right = set('**')
+        # TODO: parse if/else
 
         def _op(ops: list[tuple[str, ast_.OperationType]], next_: Callable[[], ast_.Expression]) -> ast_.Expression:
             lhs = next_()
@@ -181,7 +193,6 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             return _op([('|', ast_.OperationType.LOGICAL_NOT)], parse_comp)
 
         def parse_comp() -> ast_.Expression:
-            # TODO: make 'not in' a single token, also add all the other tokens
             return _op([
                 ('in', ast_.OperationType.CONTAINS),
                 # ('not in', ast_.OperationType.NOT_CONTAINS),
@@ -256,12 +267,12 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             return _op([('**', ast_.OperationType.EXPONENT)], parse_number)
 
         def parse_number() -> ast_.Expression:
-            if accept(type_='STRING', inc=False):
-                return ast_.StringLiteral(expect(type_='STR_LIT').data)
+            if accept(type_='STR', inc=False):
+                return ast_.StringLiteral(expect(type_='STR').data)
             elif accept(type_='INT_LIT', inc=False):
                 return ast_.NumberLiteral(lexer.lex_number(expect(type_='INT_LIT').data))
             else:
-                error.error(tokens, 0, text, '')
+                error.error(tokens, 0, text, 'Cannot parse literal')
 
         return parse_first()
 
@@ -293,7 +304,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 continue
             else:  # a variable
                 type_ = parse_type()
-            raise NotImplementedError('function and variable scopes')
+            raise NotImplementedError('function and variable scopes')  # TODO
         elif accept('func', 'STATEMENT', inc=False):
             out.append(func_head(None))
             out[-1].body = parse_func_body()
@@ -320,5 +331,6 @@ if __name__ == '__main__':
         r = eq
         assert l == r, f'{l} != {r}'
 
-    test('func void foo() {}', [ast_.Func(scope=ast_.Scope.PRIVATE, return_type=ast_.Type(type=[]), args=ast_.FuncArgs(args=[]), body=None)])
-    test('func void foo () {print(1 + 2);}', 0)
+    test('func void foo() {}', [ast_.Func(scope=ast_.Scope.PRIVATE, return_type=ast_.Type(type=[ast_.SubType('void', children=[])]), args=ast_.FuncArgs(args=[]), body=ast_.Block(type=ast_.BlockType.NORMAL, code=[]))])
+    # test('func void foo () {print(1 + 2);}', 0)
+    test('func int foo() {}', [ast_.Func(scope=ast_.Scope.PRIVATE, return_type=ast_.Type(type=[ast_.SubType(type='int', children=[])]), args=ast_.FuncArgs(args=[]), body=ast_.Block(type=ast_.BlockType.NORMAL, code=[]))])

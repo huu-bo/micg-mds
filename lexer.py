@@ -69,13 +69,15 @@ TOKENS = [  # lexer only supports tokens of length == 2 or length == 1
     '.', ',',
     '=',
 
+    ':', '::',
+
     '*', '/', '\\', '%', '%%', '+', '-', '~',
     '[', ']',
 
     '==', '!=', '>', '>=', '<', '<=',
     ':=',
     '^^', '||', '&&', '!',
-    'in',
+    # 'in',
     '|', '^', '&',
     '<<', '>>',
     '**',
@@ -136,6 +138,7 @@ def lex_number(string: str) -> int | float:
 
 
 def lex(string: str) -> List[Token]:
+    string += ' '
     global i
     i = 0
 
@@ -220,6 +223,9 @@ def lex(string: str) -> List[Token]:
             to_remove.append(tokens[i+1])
     for r in to_remove:
         tokens.remove(r)
+    for i in range(len(tokens)):
+        if tokens[i].data == 'in':
+            tokens[i].type = 'TOKEN'
     # for i in range(1, len(tokens)):
     #     if tokens[i] == ['STATEMENT', 'private'] and not tokens[i - 1] == ['TOKEN', '@']:
     #         tokens[i].type = 'TYPE'
@@ -243,6 +249,7 @@ if __name__ == '__main__':
               [['STATEMENT', 'from'], ['NAME', 'a'], ['STATEMENT', 'import'], ['NAME', 'b'], ['TOKEN', ';']])
     _test_lex('"Hello, world!"', [['STR', 'Hello, world!']])
     _test_lex('== != in', [['TOKEN', '=='], ['TOKEN', '!='], ['TOKEN', 'in']])
+    _test_lex('a: int', [['NAME', 'a'], ['TOKEN', ':'], ['NAME', 'int']])
     # TODO: test edge-cases
 
     _test_index('print(a);\ntest;', [[1, 0], [1, 5], [1, 6], [1, 7], [1, 8], [2, 0], [2, 4]])

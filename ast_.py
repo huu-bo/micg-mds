@@ -77,6 +77,18 @@ class ImportFrom(Node):
     as_: str | None
 
 
+@dataclass
+class VarDef(Node):
+    var_name: str
+    var_type: Type
+
+
+@dataclass
+class VarAssignment(Node):
+    var_name: str
+    expr: Expression
+
+
 class Expression(Node, ABC):
     pass
 

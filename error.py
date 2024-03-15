@@ -68,6 +68,9 @@ def _print_line_with_arrow(token: Token, text: str, color: str = ANSI_ERROR):
           + ANSI_WHITE
           + text[column_index + length:end_line_i])
     print(' ' * (7 + token.column) + '^' + '~' * (length - 1))
+    # TODO: arrow does not line up with strings e.g.
+    #           print("hello");
+    #                 ^~~~~
 
 
 def _print_line_with_arrow_and_note(token: Token, text: str, replace: bool, replace_str: str, color: str = ANSI_NOTE):
