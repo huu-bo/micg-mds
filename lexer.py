@@ -39,6 +39,13 @@ class Token:
         return "['" + self.type + "', '" + self.data + "']"
 
     def __eq__(self, other):
+        if type(self) is type(other):
+            return self.type == other.type \
+                and self.data == other.data \
+                and self.line == other.line \
+                and self.column == other.column \
+                and self.index == other.index
+
         if type(other) != list:
             raise TypeError
         if len(other) != 2:
@@ -54,17 +61,24 @@ class Token:
         return self.type == other[0] and self.data == other[1]
 
 
-TOKENS = [
+TOKENS = [  # lexer only supports tokens of length == 2 or length == 1
     '@',
     '(', ')',
     '{', '}',
-    '$',
     ';',
     '.', ',',
     '=',
 
-    '*', '/', '+', '-',
-    '[', ']'
+    '*', '/', '\\', '%', '%%', '+', '-', '~',
+    '[', ']',
+
+    '==', '!=', '>', '>=', '<', '<=',
+    ':=',
+    '^^', '||', '&&', '!',
+    'in',
+    '|', '^', '&',
+    '<<', '>>',
+    '**',
 ]
 STATEMENTS = [
     'func',
@@ -178,13 +192,14 @@ def lex(string: str) -> List[Token]:
                 line += 1
                 column = 0
         elif instring:
-            if c == '\n':
+            if c == '\n':  # TODO: multiline string should be e.g. """ """
                 line += 1
                 column = 0
 
             if c != '"':
                 t.data += c
             else:
+                # TODO: escape characters ('\')
                 tokens.append(Token('STR', t))
                 t = Token_builder()
                 instring = False
@@ -197,15 +212,23 @@ def lex(string: str) -> List[Token]:
     for i in range(len(tokens)):
         if tokens[i].type == 'NAME':
             tokens[i].type = name_type(tokens[i].data)
-    for i in range(1, len(tokens)):
-        if tokens[i] == ['STATEMENT', 'private'] and not tokens[i - 1] == ['TOKEN', '@']:
-            tokens[i].type = 'TYPE'
+
+    to_remove = []
+    for i in range(len(tokens)-1):
+        if tokens[i].data + tokens[i+1].data in TOKENS:
+            tokens[i].data += tokens[i+1].data
+            to_remove.append(tokens[i+1])
+    for r in to_remove:
+        tokens.remove(r)
+    # for i in range(1, len(tokens)):
+    #     if tokens[i] == ['STATEMENT', 'private'] and not tokens[i - 1] == ['TOKEN', '@']:
+    #         tokens[i].type = 'TYPE'
 
     return tokens
 
 
 if __name__ == '__main__':
-    def _test_parse(text: str, expect: list):
+    def _test_lex(text: str, expect: list):
         tokens = lex(text)
         assert tokens == expect, f'{tokens} != {expect}'
 
@@ -215,9 +238,11 @@ if __name__ == '__main__':
             assert token.line == expect[i][0], f'line {token.line} != {expect[i]} @ {token} {i}'
             assert token.column == expect[i][1], f'column {token.column} != {expect[i]} @ {token} {i}'
 
-    _test_parse('print(a);', [['NAME', 'print'], ['TOKEN', '('], ['NAME', 'a'], ['TOKEN', ')'], ['TOKEN', ';']])
-    _test_parse('from a import b;',
-                [['STATEMENT', 'from'], ['NAME', 'a'], ['STATEMENT', 'import'], ['NAME', 'b'], ['TOKEN', ';']])
+    _test_lex('print(a);', [['NAME', 'print'], ['TOKEN', '('], ['NAME', 'a'], ['TOKEN', ')'], ['TOKEN', ';']])
+    _test_lex('from a import b;',
+              [['STATEMENT', 'from'], ['NAME', 'a'], ['STATEMENT', 'import'], ['NAME', 'b'], ['TOKEN', ';']])
+    _test_lex('"Hello, world!"', [['STR', 'Hello, world!']])
+    _test_lex('== != in', [['TOKEN', '=='], ['TOKEN', '!='], ['TOKEN', 'in']])
     # TODO: test edge-cases
 
     _test_index('print(a);\ntest;', [[1, 0], [1, 5], [1, 6], [1, 7], [1, 8], [2, 0], [2, 4]])

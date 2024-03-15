@@ -131,7 +131,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             4: ['||'],
             5: ['&&'],
             6: ['!'],
-            7: ['in', 'not in', '<', '<=', '>', '>=', '!=', '=='],
+            7: ['in', '<', '<=', '>', '>=', '!=', '=='],
             8: ['|'],
             9: ['^'],
             10: ['&'],
@@ -184,7 +184,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             # TODO: make 'not in' a single token, also add all the other tokens
             return _op([
                 ('in', ast_.OperationType.CONTAINS),
-                ('not in', ast_.OperationType.NOT_CONTAINS),
+                # ('not in', ast_.OperationType.NOT_CONTAINS),
                 ('<', ast_.OperationType.COMP_LT),
                 ('<=', ast_.OperationType.COMP_LE),
                 ('>', ast_.OperationType.COMP_GT),
