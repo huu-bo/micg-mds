@@ -75,12 +75,14 @@ TOKENS = [  # lexer only supports tokens of length == 2 or length == 1
     '[', ']',
 
     '==', '!=', '>', '>=', '<', '<=',
-    ':=',
     '^^', '||', '&&', '!',
     # 'in',
     '|', '^', '&',
     '<<', '>>',
     '**',
+
+    '+=', '-=', '*=', '/=', '\\=', '%=',  # TODO: '%%=', '<<=' and '>>=' are too long for the lexer
+    '|=', '^=', '&=',
 ]
 STATEMENTS = [
     'func',

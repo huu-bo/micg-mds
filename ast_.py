@@ -87,6 +87,7 @@ class VarDef(Node):
 class VarAssignment(Node):
     var_name: str
     expr: Expression
+    operation: OperationType | None
 
 
 class Expression(Node, ABC):
@@ -129,11 +130,13 @@ class OperationType(Enum):
 
     EXPONENT = enum.auto()
 
+    CAST = enum.auto()
+
 
 @dataclass
 class Operation(Expression):
     lhs: Expression
-    rhs: Expression
+    rhs: Expression  # TODO: when casting this could be a Type so do not cast using this
     type: OperationType
 
 
@@ -160,6 +163,11 @@ class NumberLiteral(Literal):
 @dataclass
 class StringLiteral(Literal):
     value: str
+
+
+@dataclass
+class Variable(Literal):  # TODO: should this inherit from Literal?
+    variable_name: str
 
 
 @dataclass

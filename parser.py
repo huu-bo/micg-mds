@@ -114,6 +114,20 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
         out = []
         while not accept('}', 'TOKEN'):
             # TODO: '+=' etc.
+            #          ['=', '+=', '-=', '*=', '/=', '\\=', '%=', '|=', '^=', '&=']
+            assign_operators = {
+                '=': None,
+                '+=': ast_.OperationType.ADDITION,
+                '-=': ast_.OperationType.SUBTRACTION,
+                '*=': ast_.OperationType.MULTIPLICATION,
+                '/=': ast_.OperationType.DIVISION,
+                '\\=': ast_.OperationType.FLOOR_DIVISION,
+                '%=': ast_.OperationType.MODULO,
+                '|=': ast_.OperationType.BINARY_OR,
+                '^=': ast_.OperationType.BINARY_XOR,
+                '&=': ast_.OperationType.BINARY_AND
+            }
+            # TODO: 'foo.bar = 1'
             if len(tokens) > 2 and tokens[0].type == 'NAME' and tokens[1].data == ':':
                 var_name = tokens.pop(0).data
                 tokens.pop(0)
@@ -124,8 +138,15 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                     continue
 
                 expect(data='=')
-                out.append(ast_.VarAssignment(var_name, parse_expr()))
+                out.append(ast_.VarAssignment(var_name, parse_expr(), None))
                 expect(data=';')
+                continue
+
+            if len(tokens) > 2 and tokens[0].type == 'NAME' and tokens[1].data in assign_operators:
+                var_name = tokens.pop(0).data
+                operator = assign_operators[tokens.pop(0).data]
+                out.append(ast_.VarAssignment(var_name, parse_expr(), operator))
+                expect(';')
                 continue
 
             out.append(parse_expr())
@@ -150,12 +171,13 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             12: ['+', '-'],
             13: ['*', '/', '\\', '%', '%%'],
             14: ['-x', '~'],
-            15: ['**']
+            15: ['**'],
+            16: ['::']
         }
         _right = set('**')
         # TODO: parse if/else
 
-        def _op(ops: list[tuple[str, ast_.OperationType]], next_: Callable[[], ast_.Expression]) -> ast_.Expression:
+        def _op(ops: list[tuple[str, ast_.OperationType]], next_: Callable[[], ast_.Expression], _right_next=None) -> ast_.Expression:
             lhs = next_()
             while True:
                 op: ast_.OperationType | None = None
@@ -168,7 +190,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                         break
 
                 if op is not None:
-                    rhs = next_()
+                    rhs = next_() if _right_next is None else _right_next()
                     lhs = ast_.Operation(lhs, rhs, op)
                 else:
                     return lhs
@@ -242,7 +264,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             return parse_function()
 
         def parse_function() -> ast_.Expression:
-            if accept(type_='NAME', inc=False):
+            if len(tokens) >= 2 and tokens[0].type == 'NAME' and tokens[1].data == '(':
                 function_name = expect(type_='NAME').data
 
                 expect(data='(')
@@ -264,13 +286,18 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 return parse_exponent()
 
         def parse_exponent() -> ast_.Expression:
-            return _op([('**', ast_.OperationType.EXPONENT)], parse_number)
+            return _op([('**', ast_.OperationType.EXPONENT)], parse_cast)
+
+        def parse_cast() -> ast_.Expression:
+            return _op([('::', ast_.OperationType.CAST)], parse_number, _right_next=parse_type)
 
         def parse_number() -> ast_.Expression:
             if accept(type_='STR', inc=False):
                 return ast_.StringLiteral(expect(type_='STR').data)
             elif accept(type_='INT_LIT', inc=False):
                 return ast_.NumberLiteral(lexer.lex_number(expect(type_='INT_LIT').data))
+            elif accept(type_='NAME', inc=False):
+                return ast_.Variable(expect(type_='NAME').data)
             else:
                 error.error(tokens, 0, text, 'Cannot parse literal')
 
@@ -334,3 +361,5 @@ if __name__ == '__main__':
     test('func void foo() {}', [ast_.Func(scope=ast_.Scope.PRIVATE, return_type=ast_.Type(type=[ast_.SubType('void', children=[])]), args=ast_.FuncArgs(args=[]), body=ast_.Block(type=ast_.BlockType.NORMAL, code=[]))])
     # test('func void foo () {print(1 + 2);}', 0)
     test('func int foo() {}', [ast_.Func(scope=ast_.Scope.PRIVATE, return_type=ast_.Type(type=[ast_.SubType(type='int', children=[])]), args=ast_.FuncArgs(args=[]), body=ast_.Block(type=ast_.BlockType.NORMAL, code=[]))])
+    text = 'func void foo {a + 1;}'
+    print(parse_global(lex(text), text))

@@ -359,3 +359,4 @@ if __name__ == '__main__':
 
     tokens = lex(data)
     tree = parser.parse_global(tokens, data)
+    print(tree)
