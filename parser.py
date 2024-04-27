@@ -84,7 +84,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             _l_t = tokens.pop(0)
         return True
 
-    def func_head(scope: ast_.Scope | None) -> ast_.Func:
+    def parse_func_head(scope: ast_.Scope | None) -> ast_.Func:
         if scope is None:
             scope = ast_.Scope.PRIVATE  # TODO: allow implicit private?
 
@@ -326,14 +326,14 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 raise AssertionError
 
             if accept('func', 'STATEMENT', inc=False):
-                out.append(func_head(scope))
+                out.append(parse_func_head(scope))
                 parse_func_body()
                 continue
             else:  # a variable
                 type_ = parse_type()
             raise NotImplementedError('function and variable scopes')  # TODO
         elif accept('func', 'STATEMENT', inc=False):
-            out.append(func_head(None))
+            out.append(parse_func_head(None))
             out[-1].body = parse_func_body()
         elif accept('from', 'STATEMENT'):
             module = expect(type_='NAME')
@@ -346,6 +346,25 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 as_ = expect(type_='NAME')
 
             out.append(ast_.ImportFrom(module.data, item.data, as_))
+
+        elif accept(data='class'):
+            name = expect(type_='NAME').data
+
+            expect(data='{')
+
+            content = []
+            while not accept(data='}'):
+                attribute = expect(type_='NAME').data
+                expect(data=':')
+                type_ = parse_type()
+                expect(data=';')
+
+                content.append(ast_.VarDef(attribute, type_))
+
+            class_ = ast_.ClassDef(name, content)
+            expect(data=';')
+            raise NotImplementedError(class_)
+
         else:
             error.error(tokens, 0, text, f"unexpected token")
 

@@ -46,9 +46,9 @@ class Block(Node):
 
 
 @dataclass
-class FuncArg(Node):
-    type: Type
+class FuncArg(Node):  # TODO: this is the same as VarDef
     name: str
+    type: Type
 
 
 @dataclass
@@ -81,6 +81,12 @@ class ImportFrom(Node):
 class VarDef(Node):
     var_name: str
     var_type: Type
+
+
+@dataclass
+class ClassDef(Node):
+    class_name: str
+    var_defs: list[VarDef]
 
 
 @dataclass

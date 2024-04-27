@@ -1,5 +1,10 @@
 from console import println;
 
+class Test {
+    a: int;
+    b: str;
+};
+
 func int main() {
     println("test message");
 
