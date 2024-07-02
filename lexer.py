@@ -160,6 +160,8 @@ def lex(string: str) -> List[Token]:
                 column = 0
                 i += 1
 
+                if t.data:
+                    tokens.append(token_type(t))
                 t = Token_builder()
                 continue
 
@@ -220,13 +222,13 @@ def lex(string: str) -> List[Token]:
 
     to_remove = []
     for i in range(len(tokens)-1):
-        if tokens[i].data + tokens[i+1].data in TOKENS:
+        if tokens[i].type != 'STR' and tokens[i+1].type != 'STR' and tokens[i].data + tokens[i+1].data in TOKENS:
             tokens[i].data += tokens[i+1].data
             to_remove.append(tokens[i+1])
     for r in to_remove:
         tokens.remove(r)
     for i in range(len(tokens)):
-        if tokens[i].data == 'in':
+        if tokens[i].type != 'STR' and tokens[i].data == 'in':
             tokens[i].type = 'TOKEN'
     # for i in range(1, len(tokens)):
     #     if tokens[i] == ['STATEMENT', 'private'] and not tokens[i - 1] == ['TOKEN', '@']:
@@ -246,12 +248,23 @@ if __name__ == '__main__':
             assert token.line == expect[i][0], f'line {token.line} != {expect[i]} @ {token} {i}'
             assert token.column == expect[i][1], f'column {token.column} != {expect[i]} @ {token} {i}'
 
+    print('testing lexer')
+
     _test_lex('print(a);', [['NAME', 'print'], ['TOKEN', '('], ['NAME', 'a'], ['TOKEN', ')'], ['TOKEN', ';']])
     _test_lex('from a import b;',
               [['STATEMENT', 'from'], ['NAME', 'a'], ['STATEMENT', 'import'], ['NAME', 'b'], ['TOKEN', ';']])
     _test_lex('"Hello, world!"', [['STR', 'Hello, world!']])
     _test_lex('== != in', [['TOKEN', '=='], ['TOKEN', '!='], ['TOKEN', 'in']])
     _test_lex('a: int', [['NAME', 'a'], ['TOKEN', ':'], ['NAME', 'int']])
+    _test_lex('print', [['NAME', 'print']])
+    _test_lex('print\n', [['NAME', 'print']])
+    _test_lex('""', [['STR', '']])
+    _test_lex('"";', [['STR', ''], ['TOKEN', ';']])
+    _test_lex('+ ""\nprint', [['TOKEN', '+'], ['STR', ''], ['NAME', 'print']])
+    _test_lex('"=" =', [['STR', '='], ['TOKEN', '=']])
+    _test_lex('"in"', [['STR', 'in']])
     # TODO: test edge-cases
 
     _test_index('print(a);\ntest;', [[1, 0], [1, 5], [1, 6], [1, 7], [1, 8], [2, 0], [2, 4]])
+
+    print('tests succeeded')

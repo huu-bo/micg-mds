@@ -100,6 +100,14 @@ def _trace() -> None:
     traceback.print_stack()
 
 
+def print_error(message: str, _exit=True) -> None:
+    print(f'{ANSI_ERROR}{message}{ANSI_WHITE}')
+    _trace()
+
+    if _exit:
+        exit(1)
+
+
 if __name__ == '__main__':
     text = '''print ( ;
     test(tester, tester2);'''
@@ -117,3 +125,5 @@ if __name__ == '__main__':
     print(LINE)
     error_w_note(tokens, 2, text, 'Error message', True, ')', 'Note message', _exit=False)
     note(tokens, 2, text, True, 'var_name', 'It can be a variable.')
+    print(LINE)
+    print_error('test message', _exit=False)

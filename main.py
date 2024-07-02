@@ -1,4 +1,5 @@
 import parser
+import types_
 from lexer import lex
 
 if __name__ == '__main__':
@@ -9,3 +10,4 @@ if __name__ == '__main__':
     tokens = lex(data)
     tree = parser.parse_global(tokens, data)
     print(tree)
+    types_.check_types(tree)
