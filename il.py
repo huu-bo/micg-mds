@@ -79,3 +79,17 @@ class GetFromFuncScope(Op):
     # 1
     var_name: str
     var_type: types_.Type
+
+
+@dataclasses.dataclass
+class FuncDef(Op):
+    # 0
+    # 0
+    metadata: ast_.Func
+
+
+@dataclasses.dataclass
+class Return(Op):
+    # 1
+    # -
+    pass

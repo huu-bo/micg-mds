@@ -50,7 +50,7 @@ class FuncType:
     args: list[Type]
 
 
-def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> None:
+def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['il.Op']:
     import il
     ir: list[il.Op] = []
     scope = dict[str, Type]
@@ -153,12 +153,18 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> None:
             func = check_import_from(node)
             file_scope[func[0]] = func[1]
         elif isinstance(node, ast_.Func):
+            ir.append(il.FuncDef(node))
             check_func(node)
         else:
             raise NotImplementedError(node, type(node))
 
-    print(file_scope)
-    print(ir)
+    # TODO: implement return statement
+    # TODO: check return type
+    ir.append(il.ImmediateValue(il.TypeValue(Type(Types.VOID, None), None)))
+    ir.append(il.Return())
+
+    # print(file_scope)
+    # print(ir)
     # for i in ir:
     #     print('\t' + repr(i))
-    raise NotImplementedError()
+    return ir

@@ -101,7 +101,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             while not accept(')', 'TOKEN'):
                 raise NotImplementedError('function definition arguments')  # TODO
 
-        return ast_.Func(scope, type_, args, None)
+        return ast_.Func(scope, type_, name.data, args, None)
 
     def parse_func_body() -> ast_.Block:
         block_type = ast_.BlockType.NORMAL

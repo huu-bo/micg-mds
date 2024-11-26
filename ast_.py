@@ -60,6 +60,7 @@ class FuncArgs(Node):
 class Func(Node):
     scope: Scope
     return_type: Type
+    func_name: str
     args: FuncArgs
     body: Block | None
 
