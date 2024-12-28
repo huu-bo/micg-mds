@@ -106,8 +106,9 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                     error.print_error(f'operation {node.type} not allowed on type {lhs.type}')
                 return lhs
             elif isinstance(node, ast_.FuncCall):
+                for arg in node.args:
+                    check_expr(arg)  # TODO: check arguments
                 ir.append(il.FuncCall(node.function_name))
-                # TODO: check arguments
                 return get_from_func_scope(node.function_name).subtype.return_type
             elif isinstance(node, ast_.NumberLiteral):
                 ir.append(il.ImmediateValue(il.TypeValue(Type(Types.INT, node), node.value)))

@@ -11,16 +11,19 @@ force_global = {
     'main'
 }
 RUNTIME_FUNCS = {
-    'mds_alloc_stack_var'
+    'println'  # TODO: This is a hack, implement import statements
 }
 OPERATION_NAME: dict[ast_.OperationType, str] = {
     ast_.OperationType.ADDITION: 'add',
-    ast_.OperationType.MULTIPLICATION: 'mul'
 }
 
 
 def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
     """Outputs nasm x86_64 to file"""
+
+    # Registers:
+    #    rax, rbx, rcx: scratch
+    #    rdx: data stack
 
     file.write('; prelude\n')
     file.write('[BITS 64]\n')
@@ -39,6 +42,14 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
         else:
             return 1
 
+    const_index = 0
+
+    def next_const_index() -> int:
+        nonlocal const_index
+        c = const_index
+        const_index += 1
+        return c
+
     for op in ir:
         file.write(f'  ; op: {op}\n')
         if isinstance(op, il.FuncDef):
@@ -55,13 +66,23 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
             file.write(f'    call {op.func_name}\n')
 
         elif isinstance(op, il.Drop):
-            file.write('    pop rax\n')
+            # file.write('    pop rax\n')
+            file.write('    add rdx, 8\n')
 
         elif isinstance(op, il.ImmediateValue):
             if op.value.type.type == types_.Types.INT:
-                file.write(f'    push DWORD {op.value.value}\n')
+                file.write('    sub rdx, 8\n')
+                file.write(f'    mov qword [rdx], {op.value.value}\n')
             elif op.value.type.type == types_.Types.VOID:
-                file.write('    sub rsp, 8')
+                file.write('    sub rdx, 8\n')
+
+            elif op.value.type.type == types_.Types.STRING:
+                file.write('section .data\n')
+                c = next_const_index()
+                file.write(f'    _const_{c}: db ' + ', '.join(str(v) for v in op.value.value.encode('utf-8')) + ', 0\n')
+                file.write('section .text\n')
+                file.write('    sub rdx, 8\n')
+                file.write(f'    mov qword [rdx], _const_{c}\n')
 
             else:
                 raise NotImplementedError(f'ImmediateValue {op.value}')
@@ -71,10 +92,12 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
                 var_index = next_var_index()
                 func_vars[op.var_name] = var_index
 
-                file.write(f'    mov rsi, {var_index}\n')
-                file.write('    call mds_alloc_stack_var\n')
+                # file.write(f'    mov rsi, {var_index}\n')
+                # file.write('    call mds_alloc_stack_var\n')
+                file.write('    sub rsp, 8\n')
 
-            file.write(f'    mov rax, [rsp - 8]\n')
+            file.write(f'    mov rax, [rdx]\n')
+            # variables are at [rbp - var_index * 8]
             file.write(f'    mov [rbp - {func_vars[op.var_name] * 8}], rax\n')
 
         elif isinstance(op, il.GetFromFuncScope):
@@ -82,19 +105,30 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
                 print(error.ANSI_ERROR + f'ERROR: variable {repr(op.var_name)} not defined')
                 exit(1)
             file.write(f'    mov rax, [rbp - {func_vars[op.var_name] * 8}]\n')
-            file.write(f'    push rax\n')
+            file.write('    sub rdx, 8\n')
+            file.write('    mov [rdx], rax\n')
 
         elif isinstance(op, il.Operation):
             # TODO: this could be a string operation
-            file.write('    pop rbx\n')
-            file.write('    pop rax\n')
-            file.write(f'    {OPERATION_NAME[op.op_type]} rax, rbx\n')
-            file.write('    push rax\n')
+            file.write('    mov rbx, [rdx]\n')
+            file.write('    mov rax, [rdx + 8]\n')
+            file.write('    add rdx, 8\n')
+            if op.op_type == ast_.OperationType.MULTIPLICATION:
+                file.write('    mov rcx, rdx\n')
+                file.write('    mul rbx\n')
+                # TODO: Check OF (overflows to rdx)
+                #           https://www.felixcloutier.com/x86/mul
+                file.write('    mov rdx, rcx\n')
+            else:
+                file.write(f'    {OPERATION_NAME[op.op_type]} rax, rbx\n')
+            file.write('    mov [rdx], rax\n')
 
         elif isinstance(op, il.Return):
-            file.write('    pop rax\n')  # return value
-            file.write(f'    add rsp, {next_var_index() * 8}')
-            file.write('    pop rbp\n')
+            file.write('    mov rax, [rdx]\n')  # return value
+            file.write('    add rdx, 8\n')
+            # file.write(f'    add rsp, {(next_var_index() - 1) * 8}\n')
+            # file.write('    pop rbp\n')
+            file.write('    leave\n')
             file.write('    ret\n')
 
         else:

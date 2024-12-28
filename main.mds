@@ -1,10 +1,10 @@
 from console import println;
 
 func int main() {
-    println("test message");
+    // println("test message");
 
     a: int = 3;
     a += a + 1 * 2;
     // TODO: this cast is not registered in ir (?)
-    println(a::str);  // 8
+    // println(a::str);  // 8
 }
