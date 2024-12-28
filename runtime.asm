@@ -3,45 +3,46 @@ section .text
 
 ; x86 stack grows downward 💀
 
-global mds_alloc_stack_var
-; args: rsi var_index
-mds_alloc_stack_var:
-    ; mov rax, rsp
-    lea rax, [rsp-8]
-.op_stack_loop:
-    add rax, 8
+%define STDOUT 1
 
-    mov rbx, [rax]
-    mov [rax-8], rbx
+%define SYSCALL_WRITE 0x01
+%define SYSCALL_MMAP  0x09
+%define SYSCALL_EXIT  0x3c
 
-    cmp rax, rbp
-    jne .op_stack_loop
+section .data
+newline: db 0xA
+section .text
 
-    sub rsp, 8
+global println
+println:
+    mov rax, [rdx]
 
-    mov rax, rsi
-.var_stack_loop:
-    dec rax
-    jz .var_stack_loop_end
-
+.strlen_loop:
     inc rax
-    mov rbx, [rbp + rax*8]
-    dec rax
-    mov [rbp + rax*8], rbx
+    cmp byte [rax], 0
+    jne .strlen_loop
 
-    jmp .var_stack_loop
+    mov rcx, rdx
 
-.var_stack_loop_end:
+    mov rdx, rax   ; length
+    sub rdx, [rcx]
 
-    sub rbp, 8
+    mov rax, SYSCALL_WRITE
+    mov rdi, STDOUT
+    mov rsi, [rcx]
+    ; rdx: length
+    push rcx
+    syscall
+
+    mov rax, SYSCALL_WRITE
+    mov rdi, STDOUT   ; fd
+    mov rsi, newline  ; buf
+    mov rdx, 1        ; length
+    syscall  ; TODO: make this one syscall
+    pop rcx
+
+    mov rdx, rcx
     ret
-
-; extern _println_implementation
-; global println
-; println:
-
-%define SYSCALL_MMAP 0x09
-%define SYSCALL_EXIT 0x3c
 
 %define MAP_PRIVATE   0x0002
 %define MAP_GROWSDOWN 0x0100

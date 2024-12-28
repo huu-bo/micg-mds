@@ -1,7 +1,7 @@
 from console import println;
 
 func int main() {
-    // println("test message");
+    println("test message");
 
     a: int = 3;
     a += a + 1 * 2;
