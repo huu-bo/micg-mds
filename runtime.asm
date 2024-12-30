@@ -9,12 +9,8 @@ section .text
 %define SYSCALL_MMAP  0x09
 %define SYSCALL_EXIT  0x3c
 
-section .data
-newline: db 0xA
-section .text
-
-global println
-println:
+global print
+print:
     mov rax, [rdx]
 
 .strlen_loop:
@@ -33,15 +29,67 @@ println:
     ; rdx: length
     push rcx
     syscall
+    pop rcx
 
+    mov rdx, rcx
+    ret
+
+section .data
+newline: db 0xA
+section .text
+
+global println
+println:
+    call print
+
+    push rdx
     mov rax, SYSCALL_WRITE
     mov rdi, STDOUT   ; fd
     mov rsi, newline  ; buf
     mov rdx, 1        ; length
-    syscall  ; TODO: make this one syscall
-    pop rcx
+    syscall
+    pop rdx
 
-    mov rdx, rcx
+    ret
+
+%define INT64_STR_MAX_SIZE 20  ; see backend.py
+global mds_cast_int_to_string
+; Args: pointer to buffer, value
+mds_cast_int_to_string:  ; TODO: this prints backwards, flip buffer
+    mov rax, [rdx+8]
+    mov rdi, [rdx]
+    push rdx
+    push rdi
+
+    xor rdx, rdx
+    mov rbx, 10
+
+.div_loop:
+    div rbx
+
+    add edx, '0'
+    mov byte [rdi], dl
+    inc rdi
+    xor rdx, rdx
+
+    cmp rax, 0
+    jne .div_loop
+
+    dec rdi
+    pop rsi
+.flip_loop:
+    mov bl, [rdi]
+    mov cl, [rsi]
+    mov [rsi], bl
+    mov [rdi], cl
+
+    inc rsi
+    dec rdi
+    cmp rsi, rdi
+    jl .flip_loop
+
+    pop rdx
+    add rdx, 16
     ret
 
 %define MAP_PRIVATE   0x0002

@@ -73,6 +73,15 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                         [Type(Types.STRING, None)]
                     )
                 ))
+            elif node.item == 'print':
+                return ('print', Type(
+                    Types.FUNC,
+                    node,
+                    FuncType(
+                        Type(Types.VOID, None),
+                        [Type(Types.STRING, None)]
+                    )
+                ))
             else:
                 raise AttributeError(f"{node.module}.{node.item}")
         else:
@@ -93,6 +102,7 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                 rhs = check_expr(node.rhs)
                 # cast and add
                 if node.type == ast_.OperationType.CAST:
+                    ir.append(il.Operation(node.type, lhs, rhs))
                     # TODO: check if this cast is valid
                     return rhs
 
@@ -108,8 +118,9 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
             elif isinstance(node, ast_.FuncCall):
                 for arg in node.args:
                     check_expr(arg)  # TODO: check arguments
-                ir.append(il.FuncCall(node.function_name))
-                return get_from_func_scope(node.function_name).subtype.return_type
+                return_type = get_from_func_scope(node.function_name).subtype.return_type
+                ir.append(il.FuncCall(node.function_name, return_type))
+                return return_type
             elif isinstance(node, ast_.NumberLiteral):
                 ir.append(il.ImmediateValue(il.TypeValue(Type(Types.INT, node), node.value)))
                 return Type(Types.INT, node)

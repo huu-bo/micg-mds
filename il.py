@@ -56,6 +56,7 @@ class FuncCall(Op):
     # N: args
     # Return value
     func_name: str
+    return_type: types_.Type
 
 
 @dataclasses.dataclass

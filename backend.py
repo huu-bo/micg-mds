@@ -11,11 +11,16 @@ force_global = {
     'main'
 }
 RUNTIME_FUNCS = {
-    'println'  # TODO: This is a hack, implement import statements
+    'mds_cast_int_to_string',
+    
+    'println',  # TODO: This is a hack, implement import statements
+    'print'
 }
 OPERATION_NAME: dict[ast_.OperationType, str] = {
     ast_.OperationType.ADDITION: 'add',
 }
+
+INT64_STR_MAX_SIZE = 20  # floor(log10(2<<64)+1)
 
 
 def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
@@ -36,9 +41,9 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
     file.write('; code\n')
     func_vars: dict[str, int] = {}
 
-    def next_var_index() -> int:
+    def next_var_index(size: int = 1) -> int:
         if func_vars:
-            return max(func_vars.values()) + 1
+            return max(func_vars.values()) + size
         else:
             return 1
 
@@ -64,6 +69,8 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
         elif isinstance(op, il.FuncCall):
             # TODO: things with rbp or smth
             file.write(f'    call {op.func_name}\n')
+            if op.return_type.type == types_.Types.STRING:
+                raise NotImplementedError('Copying string to stack')
 
         elif isinstance(op, il.Drop):
             # file.write('    pop rax\n')
@@ -79,10 +86,26 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
             elif op.value.type.type == types_.Types.STRING:
                 file.write('section .data\n')
                 c = next_const_index()
-                file.write(f'    _const_{c}: db ' + ', '.join(str(v) for v in op.value.value.encode('utf-8')) + ', 0\n')
+                encoded = [str(v) for v in op.value.value.encode('utf-8')] + ['0']
+                length = len(encoded) | 7
+                while len(encoded) < length:
+                    encoded.append('0')
+                temp_name = f'_const_{c}'
+                file.write(f'    {temp_name}: db ' + ', '.join(encoded) + '\n')
                 file.write('section .text\n')
+
+                var_index = next_var_index(length)
+                func_vars[temp_name] = var_index
+
+                file.write('    cld\n')
+                file.write(f'    mov rcx, {(length >> 3) + 1}\n')
+                file.write(f'    mov rsi, _const_{c}\n')
+                file.write(f'    lea rdi, [rbp - {var_index * 8}]\n')
+                file.write('    rep movsq\n')
+                file.write(f'    sub rsp, {length}\n')
                 file.write('    sub rdx, 8\n')
-                file.write(f'    mov qword [rdx], _const_{c}\n')
+                file.write(f'    lea rax, [rbp - {var_index * 8}]\n')
+                file.write(f'    mov qword [rdx], rax\n')
 
             else:
                 raise NotImplementedError(f'ImmediateValue {op.value}')
@@ -109,19 +132,36 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
             file.write('    mov [rdx], rax\n')
 
         elif isinstance(op, il.Operation):
-            # TODO: this could be a string operation
-            file.write('    mov rbx, [rdx]\n')
-            file.write('    mov rax, [rdx + 8]\n')
-            file.write('    add rdx, 8\n')
-            if op.op_type == ast_.OperationType.MULTIPLICATION:
-                file.write('    mov rcx, rdx\n')
-                file.write('    mul rbx\n')
-                # TODO: Check OF (overflows to rdx)
-                #           https://www.felixcloutier.com/x86/mul
-                file.write('    mov rdx, rcx\n')
+            if op.op_type == ast_.OperationType.CAST:
+                if op.from_type.type == types_.Types.INT and op.to_type.type == types_.Types.STRING:
+                    var_index = next_var_index(INT64_STR_MAX_SIZE)
+                    func_vars[f'_const_{next_const_index()}'] = var_index
+
+                    file.write(f'    lea rax, [rbp - {var_index * 8}]\n')
+                    file.write('    sub rdx, 8\n')
+                    file.write('    mov [rdx], rax\n')
+
+                    file.write('    call mds_cast_int_to_string\n')
+
+                    file.write(f'    lea rax, [rbp - {var_index * 8}]\n')
+                    file.write('    sub rdx, 8\n')
+                    file.write('    mov [rdx], rax\n')
+                else:
+                    raise NotImplementedError(f'OperationType cast (from {op.from_type} to {op.to_type})')
             else:
-                file.write(f'    {OPERATION_NAME[op.op_type]} rax, rbx\n')
-            file.write('    mov [rdx], rax\n')
+                # TODO: this could be a string operation
+                file.write('    mov rbx, [rdx]\n')
+                file.write('    mov rax, [rdx + 8]\n')
+                file.write('    add rdx, 8\n')
+                if op.op_type == ast_.OperationType.MULTIPLICATION:
+                    file.write('    mov rcx, rdx\n')
+                    file.write('    mul rbx\n')
+                    # TODO: Check OF (overflows to rdx)
+                    #           https://www.felixcloutier.com/x86/mul
+                    file.write('    mov rdx, rcx\n')
+                else:
+                    file.write(f'    {OPERATION_NAME[op.op_type]} rax, rbx\n')
+                file.write('    mov [rdx], rax\n')
 
         elif isinstance(op, il.Return):
             file.write('    mov rax, [rdx]\n')  # return value
