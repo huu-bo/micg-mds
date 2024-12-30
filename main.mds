@@ -4,7 +4,7 @@ from console import println;
 func int main() {
     // print("WOOHOO!");
     println("test message");
-    println(9999999999999999::str);
+    println(12345678912345678::str);
 
     a: int = 3;
     a += a + 1 * 2;

@@ -79,7 +79,8 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
         elif isinstance(op, il.ImmediateValue):
             if op.value.type.type == types_.Types.INT:
                 file.write('    sub rdx, 8\n')
-                file.write(f'    mov qword [rdx], {op.value.value}\n')
+                file.write(f'    mov rax, {op.value.value}\n')
+                file.write('    mov qword [rdx], rax\n')
             elif op.value.type.type == types_.Types.VOID:
                 file.write('    sub rdx, 8\n')
 
