@@ -1,0 +1,4 @@
+./a.elf
+temp.asm
+temp.o
+runtime.o
