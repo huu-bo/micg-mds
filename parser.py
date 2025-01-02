@@ -254,7 +254,10 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 ('\\', ast_.OperationType.FLOOR_DIVISION),
                 ('%', ast_.OperationType.MODULO),
                 ('%%', ast_.OperationType.FLOOR_MODULO)
-            ], parse_parenthesis)
+            ], parse_cast)
+
+        def parse_cast() -> ast_.Expression:
+            return _op([('::', ast_.OperationType.CAST)], parse_parenthesis, _right_next=parse_type)
 
         def parse_parenthesis() -> ast_.Expression:
             if accept(data='('):
@@ -286,10 +289,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 return parse_exponent()
 
         def parse_exponent() -> ast_.Expression:
-            return _op([('**', ast_.OperationType.EXPONENT)], parse_cast)
-
-        def parse_cast() -> ast_.Expression:
-            return _op([('::', ast_.OperationType.CAST)], parse_number, _right_next=parse_type)
+            return _op([('**', ast_.OperationType.EXPONENT)], parse_number)
 
         def parse_number() -> ast_.Expression:
             if accept(type_='STR', inc=False):

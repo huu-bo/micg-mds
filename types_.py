@@ -134,6 +134,12 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                 return t
             elif isinstance(node, ast_.Type):
                 return Type.from_ast_type(node)
+            elif isinstance(node, ast_.UnaryOperation):
+                t = check_expr(node.rhs)
+                if t.type != Types.INT:
+                    error.print_error('Unary operation only accepts integers')
+                ir.append(il.UnaryOperation(node.type, t, t))
+                return t
 
             raise NotImplementedError(f'check_expr {node}')
 
@@ -150,7 +156,13 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                 t = get_from_func_scope(sub_node.var_name)
                 if sub_node.operation is not None and t.type == Types.STRING and sub_node.operation != ast_.OperationType.ADDITION:
                     error.print_error(f'operation {sub_node.operation} not allowed on type {t.type}')
+
+                if sub_node.operation is not None:
+                    ir.append(il.GetFromFuncScope(sub_node.var_name, t))
                 expr_type = check_expr(sub_node.expr)
+                if sub_node.operation is not None:
+                    ir.append(il.Operation(sub_node.operation, t, t))
+
                 assert type(t) is Type
                 if t != expr_type:
                     error.print_error(f'trying to set variable with type {t.type} to type {expr_type}')

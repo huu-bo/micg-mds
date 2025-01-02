@@ -164,6 +164,13 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
                     file.write(f'    {OPERATION_NAME[op.op_type]} rax, rbx\n')
                 file.write('    mov [rdx], rax\n')
 
+        elif isinstance(op, il.UnaryOperation):
+            if op.op_type == ast_.UnaryOperationType.NEGATE:
+                file.write('    neg qword [rdx]\n')
+
+            else:
+                raise NotImplementedError(f'UnaryOperationType {op.op_type}')
+
         elif isinstance(op, il.Return):
             file.write('    mov rax, [rdx]\n')  # return value
             file.write('    add rdx, 8\n')
