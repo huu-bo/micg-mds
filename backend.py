@@ -45,7 +45,7 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
         if func_vars:
             return max(func_vars.values()) + size
         else:
-            return 1
+            return 1 + size
 
     const_index = 0
 
@@ -65,6 +65,8 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
 
             file.write(f'    push rbp\n')
             file.write(f'    mov rbp, rsp\n')
+
+            func_vars = {}
 
         elif isinstance(op, il.FuncCall):
             # TODO: things with rbp or smth
@@ -88,8 +90,8 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
                 file.write('section .data\n')
                 c = next_const_index()
                 encoded = [str(v) for v in op.value.value.encode('utf-8')] + ['0']
-                length = len(encoded) | 7
-                while len(encoded) < length:
+                length = (len(encoded) | 7) + 1
+                while len(encoded) <= length:
                     encoded.append('0')
                 temp_name = f'_const_{c}'
                 file.write(f'    {temp_name}: db ' + ', '.join(encoded) + '\n')
@@ -99,11 +101,11 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
                 func_vars[temp_name] = var_index
 
                 file.write('    cld\n')
-                file.write(f'    mov rcx, {(length >> 3) + 1}\n')
+                file.write(f'    mov rcx, {length >> 3}\n')
                 file.write(f'    mov rsi, _const_{c}\n')
                 file.write(f'    lea rdi, [rbp - {var_index * 8}]\n')
-                file.write('    rep movsq\n')
                 file.write(f'    sub rsp, {length}\n')
+                file.write('    rep movsq\n')
                 file.write('    sub rdx, 8\n')
                 file.write(f'    lea rax, [rbp - {var_index * 8}]\n')
                 file.write(f'    mov qword [rdx], rax\n')
@@ -172,8 +174,9 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
                 raise NotImplementedError(f'UnaryOperationType {op.op_type}')
 
         elif isinstance(op, il.Return):
-            file.write('    mov rax, [rdx]\n')  # return value
-            file.write('    add rdx, 8\n')
+            # Return value is on top of temp stack
+            # file.write('    mov rax, [rdx]\n')  # return value
+            # file.write('    add rdx, 8\n')
             # file.write(f'    add rsp, {(next_var_index() - 1) * 8}\n')
             # file.write('    pop rbp\n')
             file.write('    leave\n')

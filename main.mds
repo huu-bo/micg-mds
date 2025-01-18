@@ -1,8 +1,13 @@
 from console import println;
-// from console import print;
+from console import print;
 
-func int main() {
-    // print("WOOHOO!");
+func void test() {
+    println("WOOHOO!");
+}
+
+func void main() {
+    test();
+
     println("test message");
     // println(-1::str);
 

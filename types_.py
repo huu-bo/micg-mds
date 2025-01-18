@@ -143,6 +143,14 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
 
             raise NotImplementedError(f'check_expr {node}')
 
+        file_scope[node.func_name] = Type(
+            Types.FUNC,
+            node,
+            FuncType(
+                node.return_type,  # TODO: This is probably the wrong type
+                [arg.type for arg in node.args.args]
+            )
+        )
         local_scope: scope = {}
         if node.body is None:
             raise Exception('cannot type check function without body')
@@ -150,7 +158,7 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
             if isinstance(sub_node, ast_.VarDef):
                 local_scope[sub_node.var_name] = Type.from_ast_type(sub_node.var_type)
             elif isinstance(sub_node, ast_.Expression):
-                print(check_expr(sub_node))
+                check_expr(sub_node)
                 ir.append(il.Drop())
             elif isinstance(sub_node, ast_.VarAssignment):
                 t = get_from_func_scope(sub_node.var_name)
@@ -171,6 +179,9 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
             else:
                 raise NotImplementedError(sub_node)
 
+        ir.append(il.ImmediateValue(il.TypeValue(Type(Types.VOID, None), None)))
+        ir.append(il.Return())
+
     file_scope: scope = {}
     for node in ast:
         if isinstance(node, ast_.ImportFrom):
@@ -184,8 +195,6 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
 
     # TODO: implement return statement
     # TODO: check return type
-    ir.append(il.ImmediateValue(il.TypeValue(Type(Types.VOID, None), None)))
-    ir.append(il.Return())
 
     # print(file_scope)
     # print(ir)

@@ -272,9 +272,11 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
 
                 expect(data='(')
 
-                values = [parse_first()]
-                while accept(data=','):
+                values = []
+                if not accept(data=')', inc=False):
                     values.append(parse_first())
+                    while accept(data=','):
+                        values.append(parse_first())
 
                 expect(data=')')
                 return ast_.FuncCall(function_name, values)
