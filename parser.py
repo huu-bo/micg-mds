@@ -182,7 +182,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             while True:
                 op: ast_.OperationType | None = None
                 for o in ops:
-                    if accept(data=o[0]):
+                    if accept(data=o[0], type_='TOKEN'):
                         op = o[1]
 
                         if op is None:
@@ -260,32 +260,32 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             return _op([('::', ast_.OperationType.CAST)], parse_parenthesis, _right_next=parse_type)
 
         def parse_parenthesis() -> ast_.Expression:
-            if accept(data='('):
+            if accept(data='(', type_='TOKEN'):
                 res = parse_first()
-                expect(data=')')
+                expect(data=')', type_='TOKEN')
                 return res
             return parse_function()
 
         def parse_function() -> ast_.Expression:
-            if len(tokens) >= 2 and tokens[0].type == 'NAME' and tokens[1].data == '(':
+            if len(tokens) >= 2 and tokens[0].type == 'NAME' and tokens[1].data == '(' and tokens[1].type == 'TOKEN':
                 function_name = expect(type_='NAME').data
 
-                expect(data='(')
+                expect(data='(', type_='TOKEN')
 
                 values = []
-                if not accept(data=')', inc=False):
+                if not accept(data=')', type_='TOKEN', inc=False):
                     values.append(parse_first())
-                    while accept(data=','):
+                    while accept(data=',', type_='TOKEN'):
                         values.append(parse_first())
 
-                expect(data=')')
+                expect(data=')', type_='TOKEN')
                 return ast_.FuncCall(function_name, values)
             return parse_unary()
 
         def parse_unary() -> ast_.Expression:
-            if accept(data='-'):
+            if accept(data='-', type_='TOKEN'):
                 return ast_.UnaryOperation(parse_parenthesis(), ast_.UnaryOperationType.NEGATE)
-            elif accept(data='~'):
+            elif accept(data='~', type_='TOKEN'):
                 return ast_.UnaryOperation(parse_parenthesis(), ast_.UnaryOperationType.BINARY_NOT)
             else:
                 return parse_exponent()
