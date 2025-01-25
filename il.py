@@ -75,6 +75,13 @@ class Drop(Op):
 
 
 @dataclasses.dataclass
+class LoadFuncArg(Op):
+    # 0
+    # 0
+    var_name: str
+
+
+@dataclasses.dataclass
 class GetFromFuncScope(Op):
     # 0
     # 1

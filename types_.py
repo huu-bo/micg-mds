@@ -152,6 +152,10 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
             )
         )
         local_scope: scope = {}
+        for var in node.args.args[::-1]:
+            local_scope[var.name] = Type.from_ast_type(var.type)
+            ir.append(il.LoadFuncArg(var.name))
+
         if node.body is None:
             raise Exception('cannot type check function without body')
         for sub_node in node.body.code:

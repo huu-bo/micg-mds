@@ -99,7 +99,10 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             args = ast_.FuncArgs([])
 
             while not accept(')', 'TOKEN'):
-                raise NotImplementedError('function definition arguments')  # TODO
+                var_name = expect(type_='NAME')
+                expect(':', 'TOKEN')
+                var_type = parse_type()
+                args.args.append(ast_.FuncArg(var_name.data, var_type))
 
         return ast_.Func(scope, type_, name.data, args, None)
 

@@ -56,10 +56,28 @@ func init() {
         println("lmao balls");
     }
 
-    for (int j < 10) {} // int j = 0; j < 10; j++
-    for (int j < 10; j += 2) {} // int j = 0; j < 10; j += 2;
+    for (j: int < 10) {} // int j = 0; j < 10; j++
+    for (j: int < 10; j += 2) {} // int j = 0; j < 10; j += 2;
 
-    for (int k = 3; k < 29) {} // int k = 3; k < 29; k++
+    for (k: int = 3; k < 29) {} // int k = 3; k < 29; k++
+
+    // (Type).iter_default_instance
+    // (Type).iter_default_update
+    for (s: str != "wasd") {} // s: str = str.iter_default_instance(); s != "wasd"; str.iter_default_update(s);
+
+    // TODO: should str be mutable?
+    // TODO: It would make more sense for (Type).iter_default_update to be a macro
+    // TODO: It would probably be better to only have for statements in the form 'for (a : b) {}'
+
+    for ((item: Item) : items) {}
+    items.iter().map(func (x) {x + 1}).filter(|x| => {x > 10});
+
+    iter_: iter<int> = for ((item: Item) : items) {item.value};
+    items: list<int> = iter_.filter((x: int) {x > 10})::list;
+
+    items: list<int> = for ((item: Item) : items) {item.value}.filter((x: int) {x > 10})::list;
+
+    // TODO: lambda    (...).filter((x: int) {x > 10})
 
     for (Item item : ExampleList) {}
     for (Item item : items) {}

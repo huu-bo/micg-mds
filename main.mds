@@ -1,12 +1,14 @@
 from console import println;
 from console import print;
 
-func void test() {
-    println("WOOHOO!");
+func void test(a: int) {
+    print("WOOHOO! (");
+    print(a::str);
+    println(")");
 }
 
 func void main() {
-    test();
+    test(1);
 
     println("test message");
     // println(-1::str);

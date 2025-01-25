@@ -182,5 +182,16 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
             file.write('    leave\n')
             file.write('    ret\n')
 
+        elif isinstance(op, il.LoadFuncArg):
+            file.write('    mov rax, [rdx]\n')
+            file.write('    add rdx, 8\n')
+            assert op.var_name not in func_vars
+
+            var_index = next_var_index()
+            func_vars[op.var_name] = var_index
+
+            file.write('    sub rsp, 8\n')
+            file.write(f'    mov [rbp - {func_vars[op.var_name] * 8}], rax\n')
+
         else:
             raise NotImplementedError(f'ir_to_asm {type(op)}, {op}')
