@@ -69,10 +69,9 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
             func_vars = {}
 
         elif isinstance(op, il.FuncCall):
-            # TODO: things with rbp or smth
             file.write(f'    call {op.func_name}\n')
             if op.return_type.type == types_.Types.STRING:
-                raise NotImplementedError('Copying string to stack')
+                raise NotImplementedError('Copying string to stack')  # TODO
 
         elif isinstance(op, il.Drop):
             # file.write('    pop rax\n')

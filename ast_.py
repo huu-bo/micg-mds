@@ -158,6 +158,19 @@ class UnaryOperation(Expression):
     type: UnaryOperationType
 
 
+@dataclass
+class ExprBlock(Expression):
+    body: Block
+    return_: Expression | None
+
+
+@dataclass
+class IfElse(Expression):
+    condition: Expression
+    if_: ExprBlock
+    else_: ExprBlock | None
+
+
 class Literal(Expression, ABC):
     pass
 

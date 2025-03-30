@@ -1,6 +1,7 @@
 from __future__ import annotations
 import enum
 import dataclasses
+import collections.abc
 
 import ast_
 import error
@@ -87,14 +88,13 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
         else:
             raise ModuleNotFoundError(node.module)
 
-    def check_func(node: ast_.Func) -> None:
-        def get_from_func_scope(literal: str) -> Type:
+    def check_block(node: ast_.Block | ast_.ExprBlock, get_from_outer_scope: collections.abc.Callable[[str], Type], expr_block: bool) -> None | Type:
+        def get_from_local_scope(literal: str) -> Type:
+            # TODO: support . and # (different scope types)
             if literal in local_scope:
                 return local_scope[literal]
-            elif literal in file_scope:
-                return file_scope[literal]
             else:
-                error.print_error(f'unknown literal {literal}')
+                return get_from_outer_scope(literal)
 
         def check_expr(node: ast_.Expression) -> Type:
             if isinstance(node, ast_.Operation):
@@ -118,7 +118,7 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
             elif isinstance(node, ast_.FuncCall):
                 for arg in node.args:
                     check_expr(arg)  # TODO: check arguments
-                return_type = get_from_func_scope(node.function_name).subtype.return_type
+                return_type = get_from_local_scope(node.function_name).subtype.return_type
                 ir.append(il.FuncCall(node.function_name, return_type))
                 return return_type
             elif isinstance(node, ast_.NumberLiteral):
@@ -129,7 +129,7 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                 ir.append(il.ImmediateValue(il.TypeValue(t, node.value)))
                 return t
             elif isinstance(node, ast_.Variable):
-                t = get_from_func_scope(node.variable_name)
+                t = get_from_local_scope(node.variable_name)
                 ir.append(il.GetFromFuncScope(node.variable_name, t))
                 return t
             elif isinstance(node, ast_.Type):
@@ -140,32 +140,26 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                     error.print_error('Unary operation only accepts integers')
                 ir.append(il.UnaryOperation(node.type, t, t))
                 return t
+            elif isinstance(node, ast_.ExprBlock):
+                return check_block(node, get_from_local_scope, True)
 
             raise NotImplementedError(f'check_expr {node}')
 
-        file_scope[node.func_name] = Type(
-            Types.FUNC,
-            node,
-            FuncType(
-                node.return_type,  # TODO: This is probably the wrong type
-                [arg.type for arg in node.args.args]
-            )
-        )
-        local_scope: scope = {}
-        for var in node.args.args[::-1]:
-            local_scope[var.name] = Type.from_ast_type(var.type)
-            ir.append(il.LoadFuncArg(var.name))
+        local_scope = {}
 
-        if node.body is None:
-            raise Exception('cannot type check function without body')
-        for sub_node in node.body.code:
+        if expr_block:
+            body = node.body
+        else:
+            body = node
+
+        for sub_node in body.code:
             if isinstance(sub_node, ast_.VarDef):
                 local_scope[sub_node.var_name] = Type.from_ast_type(sub_node.var_type)
             elif isinstance(sub_node, ast_.Expression):
                 check_expr(sub_node)
                 ir.append(il.Drop())
             elif isinstance(sub_node, ast_.VarAssignment):
-                t = get_from_func_scope(sub_node.var_name)
+                t = get_from_local_scope(sub_node.var_name)
                 if sub_node.operation is not None and t.type == Types.STRING and sub_node.operation != ast_.OperationType.ADDITION:
                     error.print_error(f'operation {sub_node.operation} not allowed on type {t.type}')
 
@@ -183,8 +177,41 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
             else:
                 raise NotImplementedError(sub_node)
 
+        if expr_block:
+            return check_expr(node.return_)
+
+    def check_func(node: ast_.Func, get_from_outer_scope: collections.abc.Callable[[str], Type]) -> None:
+        def get_from_func_scope(literal: str) -> Type:
+            if literal in local_scope:
+                return local_scope[literal]
+            else:
+                return get_from_outer_scope(literal)
+
+        file_scope[node.func_name] = Type(
+            Types.FUNC,
+            node,
+            FuncType(
+                node.return_type,  # TODO: This is probably the wrong type
+                [arg.type for arg in node.args.args]
+            )
+        )
+        local_scope: scope = {}
+        for var in node.args.args[::-1]:
+            local_scope[var.name] = Type.from_ast_type(var.type)
+            ir.append(il.LoadFuncArg(var.name))
+
+        if node.body is None:
+            raise Exception('cannot type check function without body')
+        check_block(node.body, get_from_func_scope, False)
+
         ir.append(il.ImmediateValue(il.TypeValue(Type(Types.VOID, None), None)))
         ir.append(il.Return())
+
+    def get_from_file_scope(literal: str) -> Type:
+        if literal in file_scope:
+            return file_scope[literal]
+        else:
+            error.print_error(f'unknown literal {literal}')
 
     file_scope: scope = {}
     for node in ast:
@@ -193,7 +220,7 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
             file_scope[func[0]] = func[1]
         elif isinstance(node, ast_.Func):
             ir.append(il.FuncDef(node))
-            check_func(node)
+            check_func(node, get_from_file_scope)
         else:
             raise NotImplementedError(node, type(node))
 

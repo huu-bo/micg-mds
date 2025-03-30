@@ -2,9 +2,19 @@ from console import println;
 from console import print;
 
 func void test(a: int) {
-    print("WOOHOO! (");
-    print(a::str);
-    println(")");
+    println(a::str);
+    // if (a < 10) {
+    //     test(a + 1);  // TODO: Proper loops, mds does not support tail call optimisation
+    // } else {
+    //     println("Done!");
+    // };
+
+    b: int = {
+        temp: int = 1;
+        temp *= 2;
+        temp
+    };
+    println(b::str);
 }
 
 func void main() {
@@ -19,4 +29,5 @@ func void main() {
 
     // TODO
     //println(a::(str, str.HEX));  // Like python hex(a)
+    //println(a::str.HEX);  // Maybe this syntax is better
 }

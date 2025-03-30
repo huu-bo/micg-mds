@@ -79,6 +79,14 @@ func init() {
 
     // TODO: lambda    (...).filter((x: int) {x > 10})
 
+    a: int = {
+        temp: int = 0;
+        for ((x: int) : 0..=10) {
+            temp += x;
+        };
+        temp
+    };
+
     for (Item item : ExampleList) {}
     for (Item item : items) {}
     for (items) {} // Item item : items

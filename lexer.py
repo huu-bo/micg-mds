@@ -95,7 +95,8 @@ STATEMENTS = [
     'load',
     'private',
 
-    'for'
+    'for',
+    'if', 'else'
 ]
 # TODO: more data types
 #           something like rust range https://doc.rust-lang.org/std/ops/struct.Range.html

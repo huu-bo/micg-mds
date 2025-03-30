@@ -53,6 +53,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
         _l_t = t
         return t
 
+    # TODO: If type_ is None, do not allow type_ == STRING
     def accept(data: str | None = None, type_: str | None = None, inc: bool = True) -> bool:
         nonlocal tokens, text, _l_t
 
@@ -107,6 +108,12 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
         return ast_.Func(scope, type_, name.data, args, None)
 
     def parse_func_body() -> ast_.Block:
+        return _parse_block(False)
+
+    def parse_expr_block() -> ast_.ExprBlock:
+        return _parse_block(True)
+
+    def _parse_block(expr_block: bool) -> ast_.Block | ast_.ExprBlock:
         block_type = ast_.BlockType.NORMAL
         if accept(data='#'):
             block_type = ast_.BlockType.GLOBAL
@@ -115,6 +122,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
         expect('{', 'TOKEN')
 
         out = []
+        expr_block_return = None
         while not accept('}', 'TOKEN'):
             # TODO: '+=' etc.
             #          ['=', '+=', '-=', '*=', '/=', '\\=', '%=', '|=', '^=', '&=']
@@ -152,10 +160,20 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 expect(';')
                 continue
 
-            out.append(parse_expr())
+            expr = parse_expr()
+            if expr_block:
+                if accept('}', 'TOKEN'):
+                    expr_block_return = expr
+                    break
+
+            out.append(expr)
             expect(';', 'TOKEN')
 
-        return ast_.Block(block_type, out)
+        block = ast_.Block(block_type, out)
+        if expr_block:
+            return ast_.ExprBlock(block, expr_block_return)
+        else:
+            return block
 
     def parse_expr() -> ast_.Expression:
         # /home/huub/Desktop/mds operator precedence.txt
@@ -178,6 +196,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
             16: ['::']
         }
         _right = set('**')
+
         # TODO: parse if/else
 
         def _op(ops: list[tuple[str, ast_.OperationType]], next_: Callable[[], ast_.Expression], _right_next=None) -> ast_.Expression:
@@ -267,7 +286,27 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 res = parse_first()
                 expect(data=')', type_='TOKEN')
                 return res
-            return parse_function()
+            return parse_expr_block_expr()
+
+        def parse_expr_block_expr() -> ast_.Expression:
+            if accept('{', 'TOKEN', inc=False):  # TODO: '.' and '#'
+                return parse_expr_block()
+            return parse_if_else()
+
+        def parse_if_else() -> ast_.Expression:
+            if accept('if', 'STATEMENT'):
+                expect('(', 'TOKEN')
+                condition = parse_first()
+                expect(')', 'TOKEN')
+                if_ = parse_expr_block()
+
+                else_ = None
+                if accept('else', 'STATEMENT'):
+                    else_ = parse_expr_block()
+
+                return ast_.IfElse(condition, if_, else_)
+            else:
+                return parse_function()
 
         def parse_function() -> ast_.Expression:
             if len(tokens) >= 2 and tokens[0].type == 'NAME' and tokens[1].data == '(' and tokens[1].type == 'TOKEN':
