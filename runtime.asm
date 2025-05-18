@@ -55,7 +55,7 @@ println:
 %define INT64_STR_MAX_SIZE 20  ; see backend.py
 global mds_cast_int_to_string
 ; Args: pointer to buffer, value
-mds_cast_int_to_string:  ; TODO: this prints backwards, flip buffer
+mds_cast_int_to_string:
     mov rax, [rdx+8]
     mov rdi, [rdx]
     push rdx
@@ -75,6 +75,7 @@ mds_cast_int_to_string:  ; TODO: this prints backwards, flip buffer
     cmp rax, 0
     jne .div_loop
 
+    mov BYTE [rdi], 0  ; Null terminator
     dec rdi
     pop rsi
 .flip_loop:
@@ -89,7 +90,9 @@ mds_cast_int_to_string:  ; TODO: this prints backwards, flip buffer
     jl .flip_loop
 
     pop rdx
-    add rdx, 16
+    mov rdi, [rdx]
+    add rdx, 8
+    mov [rdx], rdi
     ret
 
 %define MAP_PRIVATE   0x0002

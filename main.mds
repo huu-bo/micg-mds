@@ -2,30 +2,49 @@ from console import println;
 from console import print;
 
 func void test(a: int) {
+    print("a: ");
     println(a::str);
-    // if (a < 10) {
-    //     test(a + 1);  // TODO: Proper loops, mds does not support tail call optimisation
-    // } else {
-    //     println("Done!");
-    // };
 
+    if (a < 10) {
+        test(a + 1);  // TODO: Proper loops, mds does not support tail call optimisation
+    } else {
+        println("Done!");
+    };
+}
+
+func void expr_block() {
     b: int = {
         temp: int = 1;
         temp *= 2;
         temp
     };
+    print("2: ");
     println(b::str);
 }
 
 func void main() {
+    println("Calling test()");
     test(1);
 
-    println("test message");
+    println("Calling expr_block()");
+    expr_block();
+
+    // println("test message");
     // println(-1::str);
 
     a: int = 3;
     a += a + 1 * 2;
     println(a::str);  // 8
+    a = if (a == 8) {
+            1
+        } else {
+            0
+        };
+    print("a == 8: ");
+    println(a::str);
+
+    print("In text that is: ");
+    println(if (a) {"True"} else {"False"});
 
     // TODO
     //println(a::(str, str.HEX));  // Like python hex(a)

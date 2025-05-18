@@ -101,3 +101,31 @@ class Return(Op):
     # 1
     # -
     pass
+
+
+# To make an if/(else) expression, you need:
+#  - If
+#  - (Else)
+#  - EndIfElse
+# All with the same id
+
+@dataclasses.dataclass
+class If(Op):
+    # 1
+    # -
+    id: int
+    has_else: bool
+
+
+@dataclasses.dataclass
+class Else(Op):
+    # 0
+    # -
+    id: int
+
+
+@dataclasses.dataclass
+class EndIfElse(Op):
+    # -
+    # -
+    id: int

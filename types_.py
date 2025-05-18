@@ -55,6 +55,7 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
     import il
     ir: list[il.Op] = []
     scope = dict[str, Type]
+    next_if_else_id = 0
 
     def check_import_from(node: ast_.ImportFrom) -> tuple[str, Type]:
         if node.module == 'console':
@@ -142,6 +143,30 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                 return t
             elif isinstance(node, ast_.ExprBlock):
                 return check_block(node, get_from_local_scope, True)
+            elif isinstance(node, ast_.IfElse):
+                nonlocal next_if_else_id
+                id_ = next_if_else_id
+                next_if_else_id += 1
+                has_else = node.else_ is not None
+
+                if cond_type := check_expr(node.condition).type != Types.INT:
+                    error.print_error(f'Condition of if expression does not return int but {cond_type}')
+
+                ir.append(il.If(id_, has_else))
+                if_type = check_block(node.if_, get_from_local_scope, True)
+
+                if has_else:
+                    ir.append(il.Else(id_))
+                    else_type = check_block(node.else_, get_from_local_scope, True)
+
+                    if if_type != else_type:
+                        error.print_error('If and else expression return different type')
+                else:
+                    if if_type.type != Types.VOID:
+                        error.print_error('If expression without else does not return void')
+
+                ir.append(il.EndIfElse(id_))
+                return if_type
 
             raise NotImplementedError(f'check_expr {node}')
 
@@ -178,7 +203,10 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                 raise NotImplementedError(sub_node)
 
         if expr_block:
-            return check_expr(node.return_)
+            if node.return_ is not None:
+                return check_expr(node.return_)
+            else:
+                return Type(Types.VOID, None)
 
     def check_func(node: ast_.Func, get_from_outer_scope: collections.abc.Callable[[str], Type]) -> None:
         def get_from_func_scope(literal: str) -> Type:

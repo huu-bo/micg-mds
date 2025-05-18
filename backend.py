@@ -12,12 +12,22 @@ force_global = {
 }
 RUNTIME_FUNCS = {
     'mds_cast_int_to_string',
-    
+
     'println',  # TODO: This is a hack, implement import statements
     'print'
 }
 OPERATION_NAME: dict[ast_.OperationType, str] = {
     ast_.OperationType.ADDITION: 'add',
+    # TODO: the rest of the operations
+}
+CMP_OPERATIONS: dict[ast_.OperationType, str] = {
+    ast_.OperationType.COMP_GT: 'a',
+    ast_.OperationType.COMP_GE: 'ae',
+    ast_.OperationType.COMP_LT: 'b',
+    ast_.OperationType.COMP_LE: 'be',
+    ast_.OperationType.COMP_EQ: 'e',
+    ast_.OperationType.COMP_NE: 'ne',
+    # TODO: The rest of the comparison operations
 }
 
 INT64_STR_MAX_SIZE = 20  # floor(log10(2<<64)+1)
@@ -42,10 +52,11 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
     func_vars: dict[str, int] = {}
 
     def next_var_index(size: int = 1) -> int:
+        assert size >= 1
         if func_vars:
             return max(func_vars.values()) + size
         else:
-            return 1 + size
+            return size
 
     const_index = 0
 
@@ -54,6 +65,8 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
         c = const_index
         const_index += 1
         return c
+
+    has_else: dict[int, bool] = {}
 
     for op in ir:
         file.write(f'  ; op: {op}\n')
@@ -96,14 +109,15 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
                 file.write(f'    {temp_name}: db ' + ', '.join(encoded) + '\n')
                 file.write('section .text\n')
 
-                var_index = next_var_index(length)
+                allocated_qwords = (length >> 3) + 1
+                var_index = next_var_index(allocated_qwords)
                 func_vars[temp_name] = var_index
 
                 file.write('    cld\n')
                 file.write(f'    mov rcx, {length >> 3}\n')
                 file.write(f'    mov rsi, _const_{c}\n')
                 file.write(f'    lea rdi, [rbp - {var_index * 8}]\n')
-                file.write(f'    sub rsp, {length}\n')
+                file.write(f'    sub rsp, {allocated_qwords * 8}\n')
                 file.write('    rep movsq\n')
                 file.write('    sub rdx, 8\n')
                 file.write(f'    lea rax, [rbp - {var_index * 8}]\n')
@@ -136,7 +150,9 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
         elif isinstance(op, il.Operation):
             if op.op_type == ast_.OperationType.CAST:
                 if op.from_type.type == types_.Types.INT and op.to_type.type == types_.Types.STRING:
-                    var_index = next_var_index(INT64_STR_MAX_SIZE)
+                    max_size_length = INT64_STR_MAX_SIZE // 8 + 1
+                    var_index = next_var_index(max_size_length)
+                    file.write(f'    sub rsp, {max_size_length * 8}\n')
                     func_vars[f'_const_{next_const_index()}'] = var_index
 
                     file.write(f'    lea rax, [rbp - {var_index * 8}]\n')
@@ -161,6 +177,10 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
                     # TODO: Check OF (overflows to rdx)
                     #           https://www.felixcloutier.com/x86/mul
                     file.write('    mov rdx, rcx\n')
+                elif op.op_type in CMP_OPERATIONS:
+                    file.write('    cmp rax, rbx\n')
+                    file.write('    mov rax, 0\n')
+                    file.write(f'    set{CMP_OPERATIONS[op.op_type]} al\n')
                 else:
                     file.write(f'    {OPERATION_NAME[op.op_type]} rax, rbx\n')
                 file.write('    mov [rdx], rax\n')
@@ -191,6 +211,28 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
 
             file.write('    sub rsp, 8\n')
             file.write(f'    mov [rbp - {func_vars[op.var_name] * 8}], rax\n')
+
+        elif isinstance(op, il.If):
+            # file.write(f'    _if_else_{op.id}')
+            file.write('    mov rax, [rdx]\n')
+            file.write('    add rdx, 8\n')
+            # file.write('    add rax, 0\n')
+            file.write('    test rax, rax\n')
+
+            if op.has_else:
+                file.write(f'    jz _else_{op.id}\n')
+            else:
+                file.write(f'    jz _end_if_else_{op.id}\n')
+            has_else[op.id] = op.has_else
+
+        elif isinstance(op, il.Else):
+            file.write(f'    jmp _end_if_else_{op.id}\n')
+            file.write(f'_else_{op.id}:\n')
+
+        elif isinstance(op, il.EndIfElse):
+            if not has_else[op.id]:
+                file.write('    add rdx, 8\n')  # Disregard if's return value
+            file.write(f'_end_if_else_{op.id}:\n')
 
         else:
             raise NotImplementedError(f'ir_to_asm {type(op)}, {op}')
