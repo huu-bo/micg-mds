@@ -1,0 +1,20 @@
+### test_name: "Hello world"
+### program_source:
+from console import println;
+from console import print;
+
+func void main() {
+    print("Hello, ");
+    println("world!");
+}
+### program_stdout:
+Hello, world!
+
+###
+### test_name: "Return from function using trailing statement"
+### program_source:
+func int main() {
+    0
+}
+### compiler_return_code: 1
+### run_program: false

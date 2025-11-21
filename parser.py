@@ -157,7 +157,7 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 var_name = tokens.pop(0).data
                 operator = assign_operators[tokens.pop(0).data]
                 out.append(ast_.VarAssignment(var_name, parse_expr(), operator))
-                expect(';')
+                expect(';')  # TODO: Make the error's note append semicolon after the preceding token instead of replacing the next one
                 continue
 
             expr = parse_expr()
