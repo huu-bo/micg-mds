@@ -1,0 +1,100 @@
+### test_name: "Basic int and int to str"
+### program_source:
+from console import println;
+func void main {
+    a: int = 1 + 1 * 2;
+    println(a::str);
+}
+### program_stdout:
+3
+
+###
+
+### test_name: "Basic function call"
+### program_source:
+from console import print;
+
+func void hello() {
+    print("Hello\\n");
+}
+func void world() {
+    print("world");
+}
+
+func void main() {
+    hello();
+    world();
+}
+### program_stdout:
+Hello
+world
+###
+
+### test_name: "Repeated tail calls"
+### program_source:
+from console import print;
+
+func void recursive_loop(value: int) {
+    print(".");
+    value -= 1;
+    if (value > 0) {
+        recursive_loop(value);
+    };
+}
+
+func void main() {
+    recursive_loop(10);
+}
+### program_stdout:
+..........
+###
+
+### test_name: "If expression"
+### program_source:
+from console import println;
+
+func void foo(i: int) {
+    println(if (i < 10) {"lower"} else {"higher"});
+}
+
+func void main {
+    foo(11);
+    foo(5);
+}
+### program_stdout:
+higher
+lower
+
+###
+
+### test_name: "If else expression"
+### program_source:
+from console import println;
+
+func void foo(i: int) {
+    println(
+        if (i == 5) {
+            "Five"
+        } else if (i == 0) {
+            "Null"
+        } else if (i < 10) {
+            i::str
+        } else {
+            "higher"
+        }
+    );
+}
+
+func void main {
+    foo(10);
+    foo(5);
+    foo(1);
+    foo(0);
+}
+### program_stdout:
+higher
+Five
+1
+Null
+
+###

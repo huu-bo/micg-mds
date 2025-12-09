@@ -148,17 +148,45 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                 id_ = next_if_else_id
                 next_if_else_id += 1
                 has_else = node.else_ is not None
+                has_elseif = node.elseif is not None
+                if has_elseif:
+                    assert len(node.elseif) > 0
 
                 if cond_type := check_expr(node.condition).type != Types.INT:
                     error.print_error(f'Condition of if expression does not return int but {cond_type}')
 
-                ir.append(il.If(id_, has_else))
+                ir.append(il.If(id_, has_else or has_elseif))
                 if_type = check_block(node.if_, get_from_local_scope, True)
 
-                if has_else:
+                else_if_ids: list[int] = []
+                if has_elseif:
                     ir.append(il.Else(id_))
-                    else_type = check_block(node.else_, get_from_local_scope, True)
+                    for i, (else_if_condition, else_if_block) in enumerate(node.elseif):
+                        if i > 0:
+                            ir.append(il.Else(else_if_ids[-1]))
 
+                        if cond_type := check_expr(else_if_condition).type != Types.INT:
+                            error.print_error(f'Condition of if else expression does not return int but {cond_type}')
+
+                        else_if_id = next_if_else_id
+                        else_if_ids.append(else_if_id)
+                        next_if_else_id += 1
+                        if i != len(node.elseif) - 1:
+                            ir.append(il.If(else_if_id, True))
+                        else:
+                            ir.append(il.If(else_if_id, has_else))
+
+                        ifelse_type = check_block(else_if_block, get_from_local_scope, True)
+                        if if_type != ifelse_type:
+                            error.print_error('If and if else expression return different type')
+
+                if has_else:
+                    if has_elseif:
+                        ir.append(il.Else(else_if_ids[-1]))
+                    else:
+                        ir.append(il.Else(id_))
+
+                    else_type = check_block(node.else_, get_from_local_scope, True)
                     if if_type != else_type:
                         error.print_error('If and else expression return different type')
                 else:
@@ -166,6 +194,8 @@ def check_types(ast: list[ast_.Func | ast_.Import | ast_.ImportFrom]) -> list['i
                         error.print_error('If expression without else does not return void')
 
                 ir.append(il.EndIfElse(id_))
+                for else_if_id in else_if_ids:
+                    ir.append(il.EndIfElse(else_if_id))
                 return if_type
 
             raise NotImplementedError(f'check_expr {node}')

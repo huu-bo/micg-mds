@@ -300,11 +300,16 @@ def parse_global(tokens: list[Token], text: str) -> list[ast_.Func | ast_.Import
                 expect(')', 'TOKEN')
                 if_ = parse_expr_block()
 
+                elseif = None
                 else_ = None
                 if accept('else', 'STATEMENT'):
-                    else_ = parse_expr_block()
+                    if accept('if', 'STATEMENT', inc=False):
+                        else_ = parse_if_else()
+                        elseif, else_ = [(else_.condition, else_.if_)] + (else_.elseif or []), else_.else_
+                    else:
+                        else_ = parse_expr_block()
 
-                return ast_.IfElse(condition, if_, else_)
+                return ast_.IfElse(condition, if_, elseif, else_)
             else:
                 return parse_function()
 

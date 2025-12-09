@@ -168,6 +168,7 @@ class ExprBlock(Expression):
 class IfElse(Expression):
     condition: Expression
     if_: ExprBlock
+    elseif: list[tuple[Expression, ExprBlock]]
     else_: ExprBlock | None
 
 
