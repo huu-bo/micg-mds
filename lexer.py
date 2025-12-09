@@ -47,16 +47,16 @@ class Token:
                 and self.index == other.index
 
         if type(other) != list:
-            raise TypeError
+            raise TypeError()
         if len(other) != 2:
-            raise TypeError
+            raise TypeError()
         if type(other[0]) != str:
-            raise TypeError
+            raise TypeError()
         if type(other[1]) != str:
-            raise TypeError
+            raise TypeError()
 
         if other[1] == 'TYPE':  # temporary
-            raise ValueError
+            raise ValueError()
 
         return self.type == other[0] and self.data == other[1]
 
@@ -155,6 +155,7 @@ def lex(string: str) -> List[Token]:
     t: Token_builder = Token_builder()
     incomment = False
     instring = False
+    in_string_escape = False
     for c in string:
         if not incomment and not instring:
             if c == '\n':
@@ -201,17 +202,36 @@ def lex(string: str) -> List[Token]:
                 line += 1
                 column = 0
         elif instring:
-            if c == '\n':  # TODO: multiline string should be e.g. """ """
-                line += 1
-                column = 0
-
-            if c != '"':
-                t.data += c
+            if in_string_escape:
+                if c == 'n':
+                    t.data += '\n'
+                elif c == 't':
+                    t.data += '\t'
+                elif c == '\\':
+                    t.data += '\\'
+                elif c == '"':
+                    t.data += '"'
+                elif c == 'x':
+                    raise NotImplementedError('Hexadecimal escape sequences like \\x01')
+                else:
+                    tokens.append(Token('STR', t))
+                    import error
+                    error.error(tokens, len(tokens) - 1, string, 'Unknown escape sequence')
+                in_string_escape = False
             else:
-                # TODO: escape characters ('\')
-                tokens.append(Token('STR', t))
-                t = Token_builder()
-                instring = False
+                if c == '\n':  # TODO: multiline string should be e.g. """ """
+                    line += 1
+                    column = 0
+
+                if c == '\\':
+                    in_string_escape = True
+                elif c != '"':
+                    t.data += c
+                else:
+                    # TODO: escape characters ('\')
+                    tokens.append(Token('STR', t))
+                    t = Token_builder()
+                    instring = False
 
         # print(c, t)
 

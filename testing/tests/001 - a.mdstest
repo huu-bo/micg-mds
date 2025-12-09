@@ -18,3 +18,16 @@ func int main() {
 }
 ### compiler_return_code: 1
 ### run_program: false
+
+### test_name: "Escape sequences"
+### program_source:
+from console import print;
+
+func void main {
+    print("\\"\\\\\\t\\n");
+}
+###
+### program_stdout:
+"\\\x09
+
+###
