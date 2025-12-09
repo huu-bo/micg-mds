@@ -2,6 +2,7 @@ import abc
 import io
 import os
 import subprocess
+import sys
 import typing
 
 test_groups: dict[int, tuple[str, str]] = {}
@@ -217,25 +218,26 @@ def parse_tests(file: typing.TextIO) -> list[Test]:
             value['compiler_return_code'] = int(value['compiler_return_code'].decode())
         if 'run_program' in value:
             value['run_program'] = {b'true': True, b'false': False}[value['run_program']]
-        print(value)
+        # print(value)
         tests.append(Test(**value))
     return tests
 
 
-test_results: dict[int, list[TestReport]] = {}
-for test_group_id, (test_group_filename, test_group_name) in test_groups.items():
+tests: dict[int, list[Test]] = {}
+for test_group_id, (test_group_filename, test_group_name) in sorted(test_groups.items()):
     filename = os.path.join('tests', test_group_filename)
     with open(filename, 'r') as file:
-        tests = parse_tests(file)
-        for test in tests:
-            test_results.setdefault(test_group_id, []).append(test.run())
+        tests[test_group_id] = parse_tests(file)
 
 successes = 0
 failures: list[TestReportFailed] = []
-for test_group_id, group_test_results in test_results.items():
+for test_group_id, group_tests in tests.items():
     print(f'{test_group_id:03}: ', end='')
-    for test_result in group_test_results:
+    for test in group_tests:
+        test_result = test.run()
+
         print(test_result.to_short_string(), end='')
+        sys.stdout.flush()
         if type(test_result) is TestReportSucceeded:
             successes += 1
         elif type(test_result) is TestReportFailed:
@@ -251,3 +253,5 @@ print(f'Failures: {len(failures)}')
 for failure in failures:
     print('-' * 70)
     print(failure.to_detailed_string())
+
+# TODO: run lexer.py because it has some lexer test cases
