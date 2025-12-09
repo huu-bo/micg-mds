@@ -18,6 +18,7 @@ RUNTIME_FUNCS = {
 }
 OPERATION_NAME: dict[ast_.OperationType, str] = {
     ast_.OperationType.ADDITION: 'add',
+    ast_.OperationType.SUBTRACTION: 'sub',
     # TODO: the rest of the operations
 }
 CMP_OPERATIONS: dict[ast_.OperationType, str] = {
@@ -102,26 +103,13 @@ def ir_to_asm(ir: list[il.Op], file: typing.TextIO) -> None:
                 file.write('section .data\n')
                 c = next_const_index()
                 encoded = [str(v) for v in op.value.value.encode('utf-8')] + ['0']
-                length = (len(encoded) | 7) + 1
-                while len(encoded) <= length:
-                    encoded.append('0')
+
                 temp_name = f'_const_{c}'
                 file.write(f'    {temp_name}: db ' + ', '.join(encoded) + '\n')
                 file.write('section .text\n')
 
-                allocated_qwords = (length >> 3) + 1
-                var_index = next_var_index(allocated_qwords)
-                func_vars[temp_name] = var_index
-
-                file.write('    cld\n')
-                file.write(f'    mov rcx, {length >> 3}\n')
-                file.write(f'    mov rsi, _const_{c}\n')
-                file.write(f'    lea rdi, [rbp - {var_index * 8}]\n')
-                file.write(f'    sub rsp, {allocated_qwords * 8}\n')
-                file.write('    rep movsq\n')
                 file.write('    sub rdx, 8\n')
-                file.write(f'    lea rax, [rbp - {var_index * 8}]\n')
-                file.write(f'    mov qword [rdx], rax\n')
+                file.write(f'    mov qword [rdx], _const_{c}\n')
 
             else:
                 raise NotImplementedError(f'ImmediateValue {op.value}')
